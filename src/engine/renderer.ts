@@ -2,6 +2,7 @@ import {pixelsToCells,outputSize,mp4OutputSize,MAX_RENDER_SIDE} from './pixels.t
 import {gridSize,pngOutputSize,VIDEO_CELLS} from './quality.ts';
 import type {Cell} from './pixels.ts';
 import {animate} from './motion.ts';
+import {drawMark,edgeStrength,markColor} from './marks.ts';
 import type {Settings} from './settings.ts';
 export class Renderer {
   private sample=document.createElement('canvas');
@@ -24,9 +25,11 @@ export class Renderer {
       this.cached=options.staticSource?{frame,settings:s,cols,rows,cells}:undefined;
     }
     const chars=Array.from(s.ramp);
+    const edges=s.mode==='contours'?new Float32Array(cols*rows):undefined;
+    if(edges)for(const c of cells)edges[c.y*cols+c.x]=c.light;
     ctx.globalAlpha=1;ctx.fillStyle='#000';ctx.fillRect(0,0,canvas.width,canvas.height);
     const scale=Math.min(size.width/w,size.height/h),contentW=w*scale,contentH=h*scale;const ox=(size.width-contentW)/2,oy=(size.height-contentH)/2,cw=contentW/cols,ch=contentH/rows;ctx.font=`${Math.min(ch,cw/.62)*.96}px ui-monospace, Consolas, monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
-    for(const c of cells){const a=animate(c,t,cols,rows,s,reduced,chars);if(a.opacity<.01)continue;ctx.globalAlpha=a.opacity;ctx.fillStyle=`rgb(${c.red},${c.green},${c.blue})`;ctx.fillText(a.glyph,ox+(c.x+.5+a.dx)*cw,oy+(c.y+.5+a.dy)*ch);}
+    for(const c of cells){const a=animate(c,t,cols,rows,s,reduced,chars);if(a.opacity<.01)continue;ctx.globalAlpha=a.opacity;ctx.fillStyle=markColor(c,s);drawMark(ctx,c,s,a.glyph,ox+(c.x+.5+a.dx)*cw,oy+(c.y+.5+a.dy)*ch,cw,ch,edges?edgeStrength(edges,cols,rows,c.x,c.y):undefined);}
     ctx.globalAlpha=1;
   }
 }
