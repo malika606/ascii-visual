@@ -4,7 +4,7 @@ import {creativeMotionLabels,isCreativeMotion,motionPeriod,supportsDirection} fr
 export function MotionPanel({settings,onChange,reduced}:{settings:Settings;onChange:(s:Settings)=>void;reduced:boolean}){
   const creative=isCreativeMotion(settings.effect),enabled=settings.effect!=='none';
   const change=(patch:Partial<Settings>)=>onChange({...settings,...patch});
-  return <details className="advanced motion-details"><summary>Motion studio <span className="effect-count">{enabled?'On':'Off'}</span></summary>
+  return <details className="advanced motion-details" open><summary>Motion studio <span className="effect-count">{enabled?'On':'Off'}</span></summary>
     <label className="select">Motion<select aria-label="Motion" value={settings.effect} onChange={e=>change({effect:e.target.value as Effect})}>
       <option value="none">None</option>
       <optgroup label="Original"><option value="reveal">Reveal + glimmer</option><option value="wave">Soft wave</option><option value="glimmer">Glimmer</option></optgroup>
