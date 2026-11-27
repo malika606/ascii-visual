@@ -26,3 +26,25 @@ export function pngResolutionChoices(w:number,h:number){
   const max=Math.min(MAX_PNG_SIDE,Math.max(w,h));
   return [...new Set([max,2560,1920,1440,960,720,480,320].filter(n=>n<=max))].sort((a,b)=>b-a).map(side=>({side,...pngOutputSize(w,h,side)}));
 }
+
+export const MAX_VIDEO_SIDE=1920;
+export type VideoFps=12|24|30;
+export type VideoQuality='balanced'|'high';
+export function videoOutputSize(w:number,h:number,side=MAX_RENDER_SIDE,even=false){
+  const size=fitSize(w,h,Math.max(1,Math.min(MAX_VIDEO_SIDE,side)));
+  if(!even)return size;
+  const width=size.width-size.width%2,height=size.height-size.height%2;
+  return width>=2&&height>=2?{width,height}:null;
+}
+export function videoResolutionChoices(w:number,h:number,even=false){
+  const max=Math.min(MAX_VIDEO_SIDE,Math.max(w,h));
+  return [...new Set([max,1440,960,720,480,320].filter(n=>n<=max))].sort((a,b)=>b-a)
+    .flatMap(side=>{const size=videoOutputSize(w,h,side,even);return size?[{side,...size}]:[];});
+}
+export function gifResolutionChoices(w:number,h:number){
+  const max=Math.min(480,Math.max(w,h));
+  return [...new Set([max,320].filter(n=>n<=max))].map(side=>({side,...fitSize(w,h,side)}));
+}
+export function videoBitrate(w:number,h:number,fps:VideoFps,quality:VideoQuality){
+  return Math.round(Math.max(750_000,Math.min(18_000_000,3_000_000*(w*h/(960*540))*(fps/24)*(quality==='high'?1.65:1))));
+}

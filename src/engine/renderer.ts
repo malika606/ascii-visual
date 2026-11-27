@@ -1,5 +1,5 @@
 import {pixelsToCells,outputSize,mp4OutputSize,MAX_RENDER_SIDE} from './pixels.ts';
-import {gridSize,pngOutputSize,VIDEO_CELLS} from './quality.ts';
+import {gridSize,pngOutputSize,videoOutputSize,VIDEO_CELLS} from './quality.ts';
 import type {Cell} from './pixels.ts';
 import {animate} from './motion.ts';
 import {creativeFrame,isCreativeMotion} from './creativeMotion.ts';
@@ -15,8 +15,8 @@ export class Renderer {
   private effects=new EffectsRenderer();
   private cached?:{frame:CanvasImageSource;settings:Settings;cols:number;rows:number;cells:Cell[]};
   constructor(canvas:HTMLCanvasElement){this.canvas=canvas;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Canvas 2D is unavailable.');this.ctx=ctx;}
-  draw(frame:CanvasImageSource,w:number,h:number,s:Settings,t:number,reduced=false,side=MAX_RENDER_SIDE,even=false,options:{budget?:number;highResolution?:boolean;staticSource?:boolean}={}){
-    const size=even?mp4OutputSize(w,h,side):options.highResolution?pngOutputSize(w,h,side):outputSize(w,h,side);if(!size)throw Error('MP4 needs at least 2 × 2 output pixels.');const {canvas,ctx}=this;
+  draw(frame:CanvasImageSource,w:number,h:number,s:Settings,t:number,reduced=false,side=MAX_RENDER_SIDE,even=false,options:{budget?:number;highResolution?:boolean;staticSource?:boolean;videoResolution?:boolean}={}){
+    const size=options.videoResolution?videoOutputSize(w,h,side,even):even?mp4OutputSize(w,h,side):options.highResolution?pngOutputSize(w,h,side):outputSize(w,h,side);if(!size)throw Error('MP4 needs at least 2 × 2 output pixels.');const {canvas,ctx}=this;
     if(canvas.width!==size.width||canvas.height!==size.height){canvas.width=size.width;canvas.height=size.height;}
     const {cols,rows}=gridSize(w,h,s.cell,options.budget??VIDEO_CELLS);
     if(this.sample.width!==cols||this.sample.height!==rows){this.sample.width=cols;this.sample.height=rows;}

@@ -15,7 +15,7 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     assert page.get_by_role('slider',name='Detail').is_visible();assert page.get_by_role('slider',name='Color intensity').is_visible()
     frames=[]
     for ramp in ('Classic','Numbers','Binary','Blocks'):
-        page.get_by_label('Characters').select_option(ramp);page.wait_for_timeout(100);frames.append(page.locator('canvas').evaluate('(c)=>c.toDataURL()'))
+        page.get_by_label('Characters',exact=True).select_option(ramp);page.wait_for_timeout(100);frames.append(page.locator('canvas').evaluate('(c)=>c.toDataURL()'))
     assert len(set(frames))==4, 'All ramps must change actual canvas pixels'
     tab('Style');page.get_by_role('button',name='Bloom').click();tab('Adjust');page.get_by_role('slider',name='Detail').fill('12');assert 'adjusted' in page.locator('.selected-style').inner_text();tab('Style');assert page.get_by_role('button',name='Bloom').get_attribute('aria-pressed')=='true';page.get_by_role('button',name='Bloom').click()
     print('PASS four distinct character ramps, style adjusted marker, primary controls',flush=True)
@@ -146,6 +146,44 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     assert Image.open(download('png')).size==(1920,1080)
     page.get_by_label('Format',exact=True).select_option('gif');assert '1920' not in page.get_by_label('Export resolution').locator('option').evaluate_all('(els)=>els.map(e=>e.value)')
     print('PASS 2 px detail, budget indicator, fresh 1920px PNG and animation cap',flush=True)
+    # HTML embeds freshly rendered artwork and opens without external dependencies.
+    import base64,re
+    tab('Style');page.get_by_role('button',name='Fine',exact=True).click()
+    page.get_by_label('Format',exact=True).select_option('html');page.get_by_label('Export resolution').select_option('1920')
+    still_html=download('html');html=still_html.read_text()
+    assert '<script' not in html and '<source' not in html
+    from io import BytesIO
+    with Image.open(BytesIO(base64.b64decode(re.search(r'data:image/png;base64,([A-Za-z0-9+/=]+)',html).group(1)))) as still:
+        assert still.size==(1920,1080)
+    tab('Adjust')
+    advanced=page.locator('#studio-panel-Adjust details.advanced')
+    if not advanced.evaluate('(el)=>el.open'):advanced.locator('summary').click()
+    page.get_by_label('Reduce motion',exact=True).uncheck()
+    tab('Motion');page.get_by_label('Motion',exact=True).select_option('breathing');page.get_by_role('slider',name='Motion duration',exact=True).fill('2')
+    page.get_by_label('Format',exact=True).select_option('html-loop')
+    animated_html=download('html-loop');html=animated_html.read_text()
+    assert 'prefers-reduced-motion: no-preference' in html
+    with Image.open(BytesIO(base64.b64decode(re.search(r'data:image/gif;base64,([A-Za-z0-9+/=]+)',html).group(1)))) as g:
+        assert g.size==(480,270) and g.n_frames==20
+        g.seek(0);first=g.convert('RGB').tobytes();g.seek(5);assert first!=g.convert('RGB').tobytes()
+    html_page=browser.new_page(reduced_motion='reduce');external=[]
+    html_page.on('request',lambda req:external.append(req.url) if req.url.startswith(('http://','https://')) else None)
+    html_page.goto(animated_html.as_uri());html_page.wait_for_function("document.querySelector('img').naturalWidth===480")
+    assert html_page.locator('img').evaluate("(el)=>el.currentSrc.startsWith('data:image/png')")
+    html_page.emulate_media(reduced_motion='no-preference')
+    html_page.wait_for_function("document.querySelector('img').currentSrc.startsWith('data:image/gif')")
+    assert not external;html_page.close()
+    # Native full-HD video is conditional on the runtime codec support, not on filename.
+    tab('Style');page.get_by_role('button',name='Fine',exact=True).click()
+    tab('Adjust');page.get_by_label('Reduce motion',exact=True).check();advanced.locator('summary').click()
+    if page.get_by_label('Format',exact=True).locator('option[value=webm]').count():
+        page.get_by_label('Format',exact=True).select_option('webm');page.get_by_label('Export resolution').select_option('1920')
+        page.get_by_label('Target frame rate',exact=True).select_option('12');page.get_by_label('Video quality',exact=True).select_option('high')
+        expect(page.locator('.actual-size').first).to_contain_text('1920 × 1080')
+        hd=download('webm');probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-of','json',str(hd)]))
+        assert (probe['streams'][0]['width'],probe['streams'][0]['height'])==(1920,1080)
+        page.get_by_label('Target frame rate',exact=True).select_option('24');page.get_by_label('Video quality',exact=True).select_option('balanced')
+    print('PASS standalone HTML with reduced-motion fallback, embedded animated GIF and conditional full-HD WebM',flush=True)
     upload=page.locator('input[type=file]')
     def source(name):
         tab('Style');upload.set_input_files(str(FIXTURES/name));expect(page.locator('.status')).to_have_text('Source ready.');expect(page.get_by_text(name,exact=True)).to_be_visible();expect(page.get_by_role('button',name='Fine')).to_be_enabled();page.get_by_role('button',name='Fine').click()
@@ -199,5 +237,5 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     tab('Style');page.get_by_role('button',name='Remove',exact=True).click()
     assert page.evaluate("JSON.parse(localStorage.getItem('ascii-visual.looks.v1')).length")==0
     print('PASS local settings-only recipe survives reload and can be removed',flush=True)
-    page.close();page=browser.new_page();open_ui(page);page.evaluate('window.MediaRecorder=undefined');page.get_by_role('button',name='MAKE IT ASCII').click();expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled();assert page.get_by_label('Format',exact=True).locator('option').all_text_contents()==['PNG','GIF'];expect(page.locator('.export-note')).to_contain_text('unavailable');print('PASS fallback when native video recording unavailable (simulated)',flush=True)
+    page.close();page=browser.new_page();open_ui(page);page.evaluate('window.MediaRecorder=undefined');page.get_by_role('button',name='MAKE IT ASCII').click();expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled();assert page.get_by_label('Format',exact=True).locator('option').all_text_contents()==['PNG','GIF','HTML · still','HTML · animated'];expect(page.locator('.export-note')).to_contain_text('unavailable');print('PASS fallback when native video recording unavailable (simulated)',flush=True)
     browser.close();print('PASS '+('offline React runtime' if OFFLINE else 'Vite UI')+': full UI demo, source upload, scrub/pause/restart, settings, dimensions, PNG/video/GIF downloads, validation, mobile layout, reduced motion')

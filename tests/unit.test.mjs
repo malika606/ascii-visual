@@ -82,3 +82,25 @@ test('curated surprise choices keep background mask, change style and are valid'
   const current={style:'Bloom',settings:{...defaultSettings,background:'color',keyColor:'#123456',tolerance:17}};
   for(const n of [0,.12,.25,.5,.75,.99]){const result=surpriseLook(current,()=>n);assert.notEqual(result.style,current.style);assert.equal(result.settings.background,'color');assert.equal(result.settings.keyColor,'#123456');assert.equal(result.settings.tolerance,17);assert.ok(validLook(result));}
 });
+
+import {videoOutputSize,videoResolutionChoices,gifResolutionChoices,videoBitrate} from '../src/engine/quality.ts';
+import {webDocument} from '../src/export/web.ts';
+test('advanced video sizes are real, source bounded and even for MP4',()=>{
+  assert.deepEqual(videoOutputSize(3840,2160,1920,true),{width:1920,height:1080});
+  assert.deepEqual(videoOutputSize(721,617,1920,true),{width:720,height:616});
+  assert.deepEqual(videoOutputSize(64,48,1920),{width:64,height:48});
+  assert.equal(videoOutputSize(1,1280,1920,true),null);
+  assert.equal(videoResolutionChoices(3840,2160,true)[0].side,1920);
+  assert.equal(gifResolutionChoices(1920,1080)[0].side,480);
+  assert.ok(videoBitrate(1920,1080,30,'high')>videoBitrate(960,540,24,'balanced'));
+  assert.ok(videoBitrate(1920,1080,30,'high')<=18_000_000);
+});
+test('standalone HTML includes only rendered data and a reduced motion fallback',()=>{
+  const png='data:image/png;base64,AAAA',gif='data:image/gif;base64,BBBB';
+  const still=webDocument(png,720,617),animated=webDocument(png,480,411,gif);
+  assert.ok(still.includes(png)&&!still.includes('<source'));
+  assert.ok(animated.includes('prefers-reduced-motion: no-preference')&&animated.includes(png)&&animated.includes(gif));
+  assert.ok(!animated.includes('<script')&&!animated.includes('http://')&&!animated.includes('https://'));
+  assert.throws(()=>webDocument('https://invalid.example/image.png',1,1));
+  assert.throws(()=>webDocument(png,0,1));
+});
