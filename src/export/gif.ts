@@ -4,7 +4,7 @@ import {loadSource} from '../media/source.ts';
 import {outputSize} from '../engine/pixels.ts';
 import {exportDuration} from './record.ts';
 export const GIF_MAX_SIDE=480,GIF_MAX_SECONDS=5,GIF_FPS=10;
-export function gifExportDuration(duration:number,kind:string){return Math.ceil(Math.min(GIF_MAX_SECONDS,exportDuration(duration,kind))*GIF_FPS)/GIF_FPS;}
+export function gifExportDuration(duration:number,kind:string,settings?:Settings){return Math.ceil(Math.min(GIF_MAX_SECONDS,exportDuration(duration,kind,settings))*GIF_FPS-1e-8)/GIF_FPS;}
 const word=(v:number)=>[v&255,(v>>8)&255];
 // Fixed RGB332 palette. LZW uses 9-bit codes and clears before dictionary growth.
 // This trades compression and palette precision for a small, dependency-free encoder.
@@ -31,7 +31,7 @@ export class GifEncoder {
 }
 export async function exportGif(file:File,settings:Settings,signal:AbortSignal,onProgress:(p:number)=>void,side:number){
   const source=await loadSource(file,signal);try{
-    const size=outputSize(source.width,source.height,Math.min(side,GIF_MAX_SIDE)),canvas=document.createElement('canvas'),renderer=new Renderer(canvas),encoder=new GifEncoder(size.width,size.height),duration=gifExportDuration(source.duration,source.kind),count=Math.ceil(duration*GIF_FPS);
+    const size=outputSize(source.width,source.height,Math.min(side,GIF_MAX_SIDE)),canvas=document.createElement('canvas'),renderer=new Renderer(canvas),encoder=new GifEncoder(size.width,size.height),duration=gifExportDuration(source.duration,source.kind,settings),count=Math.ceil(duration*GIF_FPS);
     for(let i=0;i<count;i++){signal.throwIfAborted();const t=i/GIF_FPS;const mediaTime=source.kind==='image'?0:t%source.duration;if(source.kind==='video')await source.seek(mediaTime,signal);
       renderer.draw(source.frame(mediaTime),source.width,source.height,settings,t,false,Math.min(side,GIF_MAX_SIDE),false,{staticSource:source.kind==='image'});encoder.frame(canvas.getContext('2d')!.getImageData(0,0,size.width,size.height).data);onProgress((i+1)/count);await new Promise<void>(r=>setTimeout(r,0));}
     signal.throwIfAborted();return encoder.finish();

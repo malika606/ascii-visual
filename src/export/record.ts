@@ -1,5 +1,6 @@
 import {Renderer} from '../engine/renderer.ts';
 import type {Settings} from '../engine/settings.ts';
+import {isCreativeMotion,motionPeriod} from '../engine/creativeMotion.ts';
 import {loadSource} from '../media/source.ts';
 export interface RecordingFormat {mime:string;extension:'webm'|'mp4'}
 const formats:RecordingFormat[]=[{mime:'video/webm;codecs=vp9',extension:'webm'},{mime:'video/webm;codecs=vp8',extension:'webm'},{mime:'video/webm',extension:'webm'},{mime:'video/mp4;codecs=avc1.42001f',extension:'mp4'},{mime:'video/mp4;codecs=avc1',extension:'mp4'}];
@@ -7,13 +8,13 @@ export function supportedFormats(){if(typeof MediaRecorder==='undefined'||typeof
 export function supportedFormat(){return supportedFormats()[0]??null;}
 export function extensionForMime(mime:string){if(/^video\/webm(?:;|$)/i.test(mime))return 'webm';if(/^video\/mp4(?:;|$)/i.test(mime))return 'mp4';throw Error('Recorder returned an unknown video format.');}
 export async function verifyContainer(blob:Blob,extension:string){const b=new Uint8Array(await blob.slice(0,16).arrayBuffer());const valid=extension==='webm'?b[0]===0x1a&&b[1]===0x45&&b[2]===0xdf&&b[3]===0xa3:extension==='mp4'&&String.fromCharCode(...b.slice(4,8))==='ftyp';if(!valid)throw Error('Recorder returned bytes inconsistent with the requested container.');}
-export function exportDuration(sourceDuration:number,kind:string){return kind==='image'?5:Math.min(15,Math.max(2,sourceDuration));}
+export function exportDuration(sourceDuration:number,kind:string,settings?:Settings){return kind==='image'?(settings&&isCreativeMotion(settings.effect)?motionPeriod(settings):5):Math.min(15,Math.max(2,sourceDuration));}
 export async function record(file:File,settings:Settings,signal:AbortSignal,onProgress:(p:number)=>void,options:{format?:RecordingFormat;side?:number}={}):Promise<{blob:Blob;extension:string}>{
   const format=options.format??supportedFormat();if(!format)throw Error('Video recording is not supported by this browser.');
   if(document.hidden)throw Error('Keep the tab visible during recording.');
   const source=await loadSource(file,signal);let stream:MediaStream|undefined,recorder:MediaRecorder|undefined,raf=0;
   try{
-    const canvas=document.createElement('canvas'),renderer=new Renderer(canvas);const duration=exportDuration(source.duration,source.kind);renderer.draw(source.frame(0),source.width,source.height,settings,0,false,options.side,format.extension==='mp4',{staticSource:source.kind==='image'});
+    const canvas=document.createElement('canvas'),renderer=new Renderer(canvas);const duration=exportDuration(source.duration,source.kind,settings);renderer.draw(source.frame(0),source.width,source.height,settings,0,false,options.side,format.extension==='mp4',{staticSource:source.kind==='image'});
     stream=canvas.captureStream(24);recorder=new MediaRecorder(stream,{mimeType:format.mime,videoBitsPerSecond:3_000_000});const mr=recorder;const chunks:Blob[]=[];
     return await new Promise<{blob:Blob;extension:string}>((resolve,reject)=>{
       let start=0,nextDraw=0,finished=false,watchdog:ReturnType<typeof setTimeout>;
