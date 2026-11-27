@@ -183,7 +183,14 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
         hd=download('webm');probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-of','json',str(hd)]))
         assert (probe['streams'][0]['width'],probe['streams'][0]['height'])==(1920,1080)
         page.get_by_label('Target frame rate',exact=True).select_option('24');page.get_by_label('Video quality',exact=True).select_option('balanced')
-    print('PASS standalone HTML with reduced-motion fallback, embedded animated GIF and conditional full-HD WebM',flush=True)
+    if page.get_by_label('Format',exact=True).locator('option[value=mp4]').count():
+        page.get_by_label('Format',exact=True).select_option('mp4');page.get_by_label('Export resolution').select_option('1920')
+        page.get_by_label('Target frame rate',exact=True).select_option('12')
+        hd=download('mp4');probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-of','json',str(hd)]))
+        assert (probe['streams'][0]['width'],probe['streams'][0]['height'])==(1920,1080)
+        assert probe['streams'][0]['codec_name']=='h264'
+        page.get_by_label('Target frame rate',exact=True).select_option('24')
+    print('PASS standalone HTML with reduced-motion fallback, embedded animated GIF and conditional full-HD video',flush=True)
     upload=page.locator('input[type=file]')
     def source(name):
         tab('Style');upload.set_input_files(str(FIXTURES/name));expect(page.locator('.status')).to_have_text('Source ready.');expect(page.get_by_text(name,exact=True)).to_be_visible();expect(page.get_by_role('button',name='Fine')).to_be_enabled();page.get_by_role('button',name='Fine').click()
