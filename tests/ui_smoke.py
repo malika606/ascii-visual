@@ -1,0 +1,66 @@
+"""React UI smoke. Run against a real Vite dev/preview server; not the engine harness."""
+import os,pathlib,tempfile,subprocess,json
+from playwright.sync_api import sync_playwright,expect
+from PIL import Image
+from ui_runtime import open_ui,OFFLINE
+BASE=os.environ.get('ASCII_TEST_URL','http://localhost:5173');FIXTURES=pathlib.Path(__file__).parent/'fixtures'
+with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
+    browser=p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None,args=['--no-sandbox','--autoplay-policy=no-user-gesture-required']);page=browser.new_page(accept_downloads=True,viewport={'width':1280,'height':900});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+    open_ui(page);page.get_by_role('button',name='MAKE IT ASCII').click();expect(page.get_by_role('heading',name='ASCII Visual.')).to_be_visible();expect(page.locator('.status')).to_have_text('Source ready.');expect(page.get_by_text('ASCII Visual — original bouquet.png')).to_be_visible();expect(page.locator('canvas')).to_be_visible();expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled()
+    page.get_by_text('Advanced settings',exact=True).click();page.get_by_label('Reduce motion',exact=True).check();page.get_by_text('Advanced settings',exact=True).click();page.get_by_label('Export resolution').select_option('720');expect(page.locator('canvas')).to_have_attribute('width','720');expect(page.locator('canvas')).to_have_attribute('height','617')
+    assert page.get_by_role('button',name='Upload file').is_visible();assert page.get_by_role('button',name='Download',exact=True).count()==1
+    assert not page.get_by_label('Background mode').is_visible();assert page.get_by_role('button',name='Bloom').get_attribute('aria-pressed')=='true'
+    assert page.get_by_role('slider',name='Detail').is_visible();assert page.get_by_role('slider',name='Color intensity').is_visible()
+    frames=[]
+    for ramp in ('Classic','Numbers','Binary','Blocks'):
+        page.get_by_label('Characters').select_option(ramp);page.wait_for_timeout(100);frames.append(page.locator('canvas').evaluate('(c)=>c.toDataURL()'))
+    assert len(set(frames))==4, 'All ramps must change actual canvas pixels'
+    page.get_by_role('button',name='Bloom').click();page.get_by_role('slider',name='Detail').fill('12');assert page.get_by_role('button',name='Bloom').get_attribute('aria-pressed')=='true';assert 'adjusted' in page.locator('.selected-style').inner_text();page.get_by_role('button',name='Bloom').click()
+    print('PASS four distinct character ramps, style adjusted marker, primary controls',flush=True)
+    def download(ext):
+        page.get_by_label('Format',exact=True).select_option(ext)
+        with page.expect_download(timeout=30000) as d:page.get_by_role('button',name='Download',exact=True).click()
+        output=pathlib.Path(tmp)/d.value.suggested_filename;d.value.save_as(output);return output
+    assert Image.open(download('png')).size==(720,617)
+    upload=page.locator('input[type=file]')
+    def source(name):
+        upload.set_input_files(str(FIXTURES/name));expect(page.locator('.status')).to_have_text('Source ready.');expect(page.get_by_text(name,exact=True)).to_be_visible();expect(page.get_by_role('button',name='Fine')).to_be_enabled();page.get_by_role('button',name='Fine').click()
+    def hash_frame():return page.locator('canvas').evaluate('(c)=>c.toDataURL()')
+    def seek(value):
+        page.get_by_role('slider',name='Playback position').fill(str(value));expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled();return hash_frame()
+    source('motion.gif');expect(page.get_by_text('64 × 48 · GIF')).to_be_visible();a=seek(0);b=seek(.15);c=seek(.45);assert len({a,b,c})==3;assert seek(.6)==c;assert seek(0)==a;page.wait_for_timeout(150);assert hash_frame()==a
+    page.get_by_role('button',name='Restart').click();expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled();assert hash_frame()==a
+    gif=download('gif');assert gif.suffix=='.gif';assert Image.open(gif).n_frames==20
+    for name in ('seek-colors.webm','seek-colors.mp4'):
+        source(name);a,b,c=seek(.4),seek(1.4),seek(2.4);assert len({a,b,c})==3;assert seek(.4)==a
+    source('motion.gif')
+    for ext in ('WEBM','MP4'):
+        option=page.get_by_label('Format',exact=True).locator(f'option[value={ext.lower()}]')
+        if option.count():
+            output=download(ext.lower());assert output.suffix=='.'+ext.lower();probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-show_format','-of','json',str(output)]));assert len(probe['streams'])==1 and probe['streams'][0]['codec_type']=='video';assert ext.lower() in probe['format']['format_name'];print('PASS UI download',ext,probe['streams'][0]['codec_name'],flush=True)
+        else:print('SKIP unsupported UI download',ext,flush=True)
+    page.get_by_text('Advanced settings',exact=True).click();page.get_by_label('Background mode').select_option('color');page.get_by_label('Background color').fill('#22aacc');page.get_by_role('slider',name='Background tolerance',exact=False).fill('10');page.get_by_label('Background mode').select_option('light')
+    # Upload errors are local to the preview; the existing paused frame and settings survive.
+    source('motion.gif');seek(.15);page.get_by_role('slider',name='Detail').fill('12')
+    old_frame=hash_frame();old_position=page.get_by_role('slider',name='Playback position').input_value();old_detail=page.get_by_role('slider',name='Detail').input_value()
+    oversized=pathlib.Path(tmp)/'oversized.png'
+    with oversized.open('wb') as f:f.truncate(30*1024*1024+1)
+    bad_cases=[({'name':'bad.txt','mimeType':'text/plain','buffer':b'not an image'},'Unsupported file'),(str(oversized),'30 MB limit'),({'name':'broken.png','mimeType':'image/png','buffer':b'not a PNG'},'could not be decoded')]
+    for w,h in [(1280,900),(390,844),(320,568)]:
+        page.set_viewport_size({'width':w,'height':h});page.evaluate('window.scrollTo(0,0)')
+        for bad,reason in bad_cases:
+            upload.set_input_files(bad);alert=page.get_by_role('alert');expect(alert).to_have_count(1);expect(alert).to_contain_text(reason);expect(alert).to_contain_text('Previous source kept.')
+            expect(page.locator('.stage').get_by_role('alert')).to_be_visible();assert page.locator('.export-panel').get_by_role('alert').count()==0
+            assert alert.evaluate('(el)=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth}')
+            assert alert.bounding_box()['y']<page.locator('.viewport').bounding_box()['y']
+            expect(page.get_by_text('motion.gif',exact=True)).to_be_visible();expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled()
+            assert hash_frame()==old_frame;assert page.get_by_role('slider',name='Playback position').input_value()==old_position;assert page.get_by_role('slider',name='Detail').input_value()==old_detail
+    source('still.png');expect(page.get_by_role('alert')).to_have_count(0);assert hash_frame()!=old_frame
+    page.set_viewport_size({'width':1280,'height':900});print('PASS unsupported, oversized and corrupt uploads: one visible alert near Upload at desktop/390/320, retained source/frame/settings/time, successful next upload',flush=True)
+    page.get_by_role('button',name='Use demo').click();expect(page.get_by_text('ASCII Visual — original bouquet.png')).to_be_visible();expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled()
+    page.get_by_text('Advanced settings',exact=True).click();page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth <= innerWidth');expect(page.get_by_role('button',name='Download',exact=True)).to_be_visible();page.emulate_media(reduced_motion='reduce');expect(page.get_by_text('Reduced motion enabled')).to_be_visible();assert not errors,errors
+    for w,h in [(390,844),(320,568)]:
+        page.set_viewport_size({'width':w,'height':h});assert page.evaluate('document.documentElement.scrollWidth <= innerWidth');assert page.locator('.stage').bounding_box()['y']<page.locator('.appearance').bounding_box()['y']<page.locator('.export-panel').bounding_box()['y']
+    page.set_viewport_size({'width':1280,'height':900});page.get_by_label('Format',exact=True).select_option('gif');page.get_by_role('button',name='Download',exact=True).click();expect(page.get_by_role('button',name='Cancel export')).to_be_visible();page.get_by_role('button',name='Cancel export').click();expect(page.locator('.status')).to_have_text('Export cancelled.');expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled();print('PASS export progress and cancellation',flush=True)
+    page.close();page=browser.new_page();open_ui(page);page.evaluate('window.MediaRecorder=undefined');page.get_by_role('button',name='MAKE IT ASCII').click();expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled();assert page.get_by_label('Format',exact=True).locator('option').all_text_contents()==['PNG','GIF'];expect(page.locator('.export-note')).to_contain_text('unavailable');print('PASS fallback when native video recording unavailable (simulated)',flush=True)
+    browser.close();print('PASS '+('offline React runtime' if OFFLINE else 'Vite UI')+': full UI demo, source upload, scrub/pause/restart, settings, dimensions, PNG/video/GIF downloads, validation, mobile layout, reduced motion')
