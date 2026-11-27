@@ -10,7 +10,7 @@ export function EffectsPanel({settings,onChange,section}:{settings:Settings;onCh
   const palette=settings.palette??'source';
   const swatch=stops??(palette==='amber'?['#211300','#ffbc44']:palette==='paper'?['#30291b','#e9dfc8']:palette==='white'?['#1a1a1a','#f3f3f3']:['#663dbb','#f3a1c5','#8ad9af']);
   const change=(key:keyof VisualEffects,n:number)=>onChange({...settings,effects:{...values,[key]:n}});
-  return <section className="color-effects" aria-label={section==='color'?'Color palette':'Visual effects'}>
+  return <section className="color-effects" aria-label={section==='color'?'Palette controls':'Effect controls'}>
     {section==='color'&&<>
     <label className="select">Color palette
       <select aria-label="Color palette" value={palette} onChange={e=>onChange({...settings,palette:e.target.value as StylePalette,monochrome:false})}>
