@@ -1,0 +1,31 @@
+name: Verify ASCII Visual
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright pillow
+      - run: python -m playwright install --with-deps chromium
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Browser smoke against Vite
+        run: |
+          npm run dev -- --host 127.0.0.1 > /tmp/ascii-vite.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:5173/ >/dev/null && break; sleep 1; done
+          ASCII_TEST_URL=http://127.0.0.1:5173 python tests/ui_smoke.py
+          ASCII_TEST_URL=http://127.0.0.1:5173 python tests/hero_smoke.py

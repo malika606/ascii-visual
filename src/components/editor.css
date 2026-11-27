@@ -10,3 +10,5 @@
 
 /* Upload feedback belongs to the source panel, before the preview. */
 .editor .upload-error{margin:0;padding:10px 13px;border:0;border-bottom:1px solid #a04c4c;background:#261417;color:#ffc6cc;font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+
+.editor .preview-quality{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#aaa;flex-wrap:wrap}.editor .preview-quality select{background:#111;border:1px solid #555;color:#eee;padding:6px;max-width:100%}.editor .stage-bottom{flex-wrap:wrap}.editor .stage-meta{flex-wrap:wrap}

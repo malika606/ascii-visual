@@ -138,3 +138,6 @@ ASCII_OFFLINE_BUNDLE=/tmp/ascii-browser-bundle.js CHROMIUM_PATH=/usr/bin/chromiu
 ```
 
 Set `ASCII_SAMPLE_DIR` to save actual generated demo/verification outputs. The offline bundle is test-only, never the application. On Windows use equivalent environment variable syntax. Refer to `VERIFICATION.md` for actual execution outcomes and remaining acceptance tasks.
+
+### Rendering quality (stage 1)
+Detail ranges from 2–32 reference pixels. The preview shows the actual grid and when a cell budget limits it. Auto uses up to 24,000 cells while playing and 240,000 paused; Fast uses 24,000 and High uses up to 90,000 playing / 240,000 paused. PNG is independently rendered from the current source at up to 3840 pixels on the long side, never above source resolution. The grid is based on a 960-pixel reference, so larger PNGs sharpen glyphs rather than implying extra source detail. Animation export uses up to 60,000 cells, WebM/MP4 retain 960px maximum, GIF 480px. High density may still be slower on mobile; use Auto or Fast. Video recording is real time.

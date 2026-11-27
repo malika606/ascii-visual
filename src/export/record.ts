@@ -13,7 +13,7 @@ export async function record(file:File,settings:Settings,signal:AbortSignal,onPr
   if(document.hidden)throw Error('Keep the tab visible during recording.');
   const source=await loadSource(file,signal);let stream:MediaStream|undefined,recorder:MediaRecorder|undefined,raf=0;
   try{
-    const canvas=document.createElement('canvas'),renderer=new Renderer(canvas);const duration=exportDuration(source.duration,source.kind);renderer.draw(source.frame(0),source.width,source.height,settings,0,false,options.side,format.extension==='mp4');
+    const canvas=document.createElement('canvas'),renderer=new Renderer(canvas);const duration=exportDuration(source.duration,source.kind);renderer.draw(source.frame(0),source.width,source.height,settings,0,false,options.side,format.extension==='mp4',{staticSource:source.kind==='image'});
     stream=canvas.captureStream(24);recorder=new MediaRecorder(stream,{mimeType:format.mime,videoBitsPerSecond:3_000_000});const mr=recorder;const chunks:Blob[]=[];
     return await new Promise<{blob:Blob;extension:string}>((resolve,reject)=>{
       let start=0,nextDraw=0,finished=false,watchdog:ReturnType<typeof setTimeout>;
@@ -22,7 +22,7 @@ export async function record(file:File,settings:Settings,signal:AbortSignal,onPr
       const cancel=()=>fail(new DOMException('Export cancelled.','AbortError'));const visibility=()=>{if(document.hidden)fail(Error('Recording stopped because the tab became hidden.'));};
       mr.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};mr.onerror=()=>fail(Error('Video recorder failed.'));
       mr.onstop=async()=>{if(finished)return;try{const mime=mr.mimeType||chunks[0]?.type||format.mime;const blob=new Blob(chunks,{type:mime.split(';')[0]});if(!blob.size)throw Error('Recorder produced an empty video.');const extension=extensionForMime(mime);if(extension!==format.extension)throw Error('Recorder returned a different container than requested.');await verifyContainer(blob,extension);if(finished)return;finished=true;cleanup();resolve({blob,extension});}catch(e){fail(e);}};
-      const tick=(now:number)=>{if(finished)return;try{const t=(now-start)/1000;if(t>=duration){onProgress(1);mr.stop();return;}if(t*1000>=nextDraw){renderer.draw(source.frame(t),source.width,source.height,settings,t,false,options.side,format.extension==='mp4');nextDraw=(Math.floor(t*24)+1)*1000/24;onProgress(t/duration);}raf=requestAnimationFrame(tick);}catch(e){fail(e);}};
+      const tick=(now:number)=>{if(finished)return;try{const t=(now-start)/1000;if(t>=duration){onProgress(1);mr.stop();return;}if(t*1000>=nextDraw){renderer.draw(source.frame(t),source.width,source.height,settings,t,false,options.side,format.extension==='mp4',{staticSource:source.kind==='image'});nextDraw=(Math.floor(t*24)+1)*1000/24;onProgress(t/duration);}raf=requestAnimationFrame(tick);}catch(e){fail(e);}};
       signal.addEventListener('abort',cancel,{once:true});document.addEventListener('visibilitychange',visibility);watchdog=setTimeout(()=>fail(Error('Recording timed out.')), (duration+15)*1000);
       if(signal.aborted){cancel();return;}if(document.hidden){visibility();return;}
       source.play().then(()=>{if(finished)return;try{mr.start(250);start=performance.now();raf=requestAnimationFrame(tick);}catch(e){fail(e);}},fail);

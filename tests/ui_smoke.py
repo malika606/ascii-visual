@@ -22,6 +22,15 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
         with page.expect_download(timeout=30000) as d:page.get_by_role('button',name='Download',exact=True).click()
         output=pathlib.Path(tmp)/d.value.suggested_filename;d.value.save_as(output);return output
     assert Image.open(download('png')).size==(720,617)
+    # Dense preview and a real high-resolution PNG on a generated source.
+    large=pathlib.Path(tmp)/'large.png';Image.new('RGB',(1920,1080),'#ee99bb').save(large)
+    page.locator('input[type=file]').set_input_files(str(large));expect(page.get_by_text('large.png',exact=True)).to_be_visible()
+    page.get_by_role('slider',name='Detail').fill('2');page.get_by_label('Preview quality').select_option('fast');expect(page.locator('.stage-meta')).to_contain_text('quality cap')
+    page.get_by_label('Preview quality').select_option('high');expect(page.locator('.stage-meta')).not_to_contain_text('quality cap')
+    page.get_by_label('Export resolution').select_option('1920');expect(page.locator('canvas')).to_have_attribute('width','960')
+    assert Image.open(download('png')).size==(1920,1080)
+    page.get_by_label('Format',exact=True).select_option('gif');assert '1920' not in page.get_by_label('Export resolution').locator('option').evaluate_all('(els)=>els.map(e=>e.value)')
+    print('PASS 2 px detail, budget indicator, fresh 1920px PNG and animation cap',flush=True)
     upload=page.locator('input[type=file]')
     def source(name):
         upload.set_input_files(str(FIXTURES/name));expect(page.locator('.status')).to_have_text('Source ready.');expect(page.get_by_text(name,exact=True)).to_be_visible();expect(page.get_by_role('button',name='Fine')).to_be_enabled();page.get_by_role('button',name='Fine').click()
