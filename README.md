@@ -7,7 +7,7 @@ A standalone, local-first experiment for a professional portfolio Lab. Convert s
 Node.js 22.13+ and npm are required.
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
 
@@ -20,9 +20,9 @@ npm run build
 npm run preview
 ```
 
-Deploy `dist/` to a static HTTPS host. Vite uses relative asset paths (`base: './'`) for subdirectory hosting. No backend, API credentials, analytics or upload service. Do not open index.html directly from the file system. Generate and retain the lockfile with `npm install`; use `npm ci` for future reproducible installs.
+Deploy `dist/` to a static HTTPS host. Vite uses relative asset paths (`base: './'`) for subdirectory hosting. No backend, API credentials, analytics or upload service. Do not open index.html directly from the file system. The committed lockfile supports reproducible installs with `npm ci`.
 
-**Verification status (v1.3.1):** 14/14 unit tests and core TypeScript check passed. Real Chromium UI checks passed using local React/ReactDOM 18.2.0 and a TypeScript-transpiled, test-only bundle (including real media, Canvas and downloads). This does **not** verify the declared React 18.3.1 dependencies, Vite production build, or actual HTTP loading. `npm install` failed on DNS EAI_AGAIN; the full typecheck/build and lockfile remain pending. See `VERIFICATION.md` for precise scope.
+**Verification status (v1.3.1):** `npm ci`, TypeScript, all 14 unit tests, and the production Vite build passed. The real Vite/React app passed desktop and mobile Chromium UI smoke tests, including uploads, settings, intro/editor navigation, and PNG/GIF/WebM/MP4 downloads in the tested browser. See [VERIFICATION.md](VERIFICATION.md) for commands, environment, and device limitations.
 
 ## Introduction and editor lifecycle
 
