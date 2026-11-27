@@ -2,13 +2,16 @@ import {pixelsToCells,outputSize,mp4OutputSize,MAX_RENDER_SIDE} from './pixels.t
 import {gridSize,pngOutputSize,VIDEO_CELLS} from './quality.ts';
 import type {Cell} from './pixels.ts';
 import {animate} from './motion.ts';
-import {drawMark,edgeStrength,markColor} from './marks.ts';
+import {drawMark,edgeStrength} from './marks.ts';
+import {colorMapper} from './palette.ts';
+import {EffectsRenderer} from './effects.ts';
 import type {Settings} from './settings.ts';
 export class Renderer {
   private sample=document.createElement('canvas');
   private sc=this.sample.getContext('2d',{willReadFrequently:true})!;
   private ctx:CanvasRenderingContext2D;
   private canvas:HTMLCanvasElement;
+  private effects=new EffectsRenderer();
   private cached?:{frame:CanvasImageSource;settings:Settings;cols:number;rows:number;cells:Cell[]};
   constructor(canvas:HTMLCanvasElement){this.canvas=canvas;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Canvas 2D is unavailable.');this.ctx=ctx;}
   draw(frame:CanvasImageSource,w:number,h:number,s:Settings,t:number,reduced=false,side=MAX_RENDER_SIDE,even=false,options:{budget?:number;highResolution?:boolean;staticSource?:boolean}={}){
@@ -24,12 +27,13 @@ export class Renderer {
       cells=pixelsToCells(this.sc.getImageData(0,0,cols,rows).data,cols,rows,s);
       this.cached=options.staticSource?{frame,settings:s,cols,rows,cells}:undefined;
     }
-    const chars=Array.from(s.ramp);
+    const chars=Array.from(s.ramp),color=colorMapper(s);
     const edges=s.mode==='contours'?new Float32Array(cols*rows):undefined;
     if(edges)for(const c of cells)edges[c.y*cols+c.x]=c.light;
     ctx.globalAlpha=1;ctx.fillStyle='#000';ctx.fillRect(0,0,canvas.width,canvas.height);
     const scale=Math.min(size.width/w,size.height/h),contentW=w*scale,contentH=h*scale;const ox=(size.width-contentW)/2,oy=(size.height-contentH)/2,cw=contentW/cols,ch=contentH/rows;ctx.font=`${Math.min(ch,cw/.62)*.96}px ui-monospace, Consolas, monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
-    for(const c of cells){const a=animate(c,t,cols,rows,s,reduced,chars);if(a.opacity<.01)continue;ctx.globalAlpha=a.opacity;ctx.fillStyle=markColor(c,s);drawMark(ctx,c,s,a.glyph,ox+(c.x+.5+a.dx)*cw,oy+(c.y+.5+a.dy)*ch,cw,ch,edges?edgeStrength(edges,cols,rows,c.x,c.y):undefined);}
+    for(const c of cells){const a=animate(c,t,cols,rows,s,reduced,chars);if(a.opacity<.01)continue;ctx.globalAlpha=a.opacity;ctx.fillStyle=color(c);drawMark(ctx,c,s,a.glyph,ox+(c.x+.5+a.dx)*cw,oy+(c.y+.5+a.dy)*ch,cw,ch,edges?edgeStrength(edges,cols,rows,c.x,c.y):undefined);}
     ctx.globalAlpha=1;
+    this.effects.apply(canvas,ctx,s.effects);
   }
 }
