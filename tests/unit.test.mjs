@@ -110,5 +110,5 @@ test('resolved export side is always an advertised choice, including unusual nat
   const options=[{side:480},{side:320}];
   assert.equal(resolveOutputSide(options,960),480);assert.equal(resolveOutputSide(options,390),320);
   assert.equal(resolveOutputSide(options,200),320);assert.equal(resolveOutputSide([{side:64}],960),64);
-  const tall=videoResolutionChoices(3,1920,true);assert.equal(resolveOutputSide(tall,960),1920);
+  const tall=videoResolutionChoices(2,1920,true);assert.equal(resolveOutputSide(tall,960),1440);
 });
