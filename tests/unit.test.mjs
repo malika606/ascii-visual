@@ -59,3 +59,26 @@ test('creative duration is bounded, once clamps, and directions are distinct',()
   assert.equal(animate(c,0,40,30,{...s,motionLoop:false}).opacity,0);
   assert.equal(animate(c,2,40,30,{...s,motionLoop:false}).opacity,1);
 });
+
+import {initialHistory,historyReducer,sameSettings,validRamp,validLook,parseLooks,surpriseLook,HISTORY_LIMIT} from '../src/engine/studio.ts';
+test('look history groups a drag, restores complete styles and clears redo after new edits',()=>{
+  const original={style:'Bloom',settings:defaultSettings};let h=initialHistory(original);
+  const commit=(style,settings,group)=>{h=historyReducer(h,{type:'commit',look:{style,settings},group});};
+  commit('Bloom',{...defaultSettings,cell:10},1);commit('Bloom',{...defaultSettings,cell:14},1);
+  assert.equal(h.past.length,1);assert.equal(h.present.settings.cell,14);
+  commit('Fine',presets.Fine);h=historyReducer(h,{type:'undo'});assert.equal(h.present.style,'Bloom');assert.equal(h.present.settings.cell,14);
+  h=historyReducer(h,{type:'undo'});assert.ok(sameSettings(h.present.settings,original.settings));h=historyReducer(h,{type:'redo'});assert.equal(h.present.settings.cell,14);
+  commit('Bloom',{...defaultSettings,cell:16});assert.equal(h.future.length,0);
+  for(let i=0;i<100;i++)commit('Bloom',{...defaultSettings,cell:i%30+2});assert.ok(h.past.length<=HISTORY_LIMIT);
+});
+test('saved settings validation rejects corrupted data and custom ramps exclude controls',()=>{
+  assert.ok(validRamp(' .a▓@'));assert.ok(!validRamp('   '));assert.ok(!validRamp('a\nb'));assert.ok(!validRamp('a'.repeat(65)));
+  const look={style:'Bloom',settings:{...defaultSettings,ramp:' .a▓@'}};
+  assert.ok(validLook(look));assert.ok(!validLook({...look,style:'__proto__'}));assert.ok(!validLook({...look,settings:{...look.settings,cell:0}}));
+  const parsed=parseLooks(JSON.stringify([{name:'Rose',...look},{name:'Rose',...look},{name:'Bad',style:'oops',settings:{}},{name:'Broken',...look,settings:{...look.settings,effects:{glow:999}}}]));
+  assert.equal(parsed.length,1);assert.equal(parsed[0].settings.ramp,' .a▓@');assert.deepEqual(parseLooks('not JSON'),[]);
+});
+test('curated surprise choices keep background mask, change style and are valid',()=>{
+  const current={style:'Bloom',settings:{...defaultSettings,background:'color',keyColor:'#123456',tolerance:17}};
+  for(const n of [0,.12,.25,.5,.75,.99]){const result=surpriseLook(current,()=>n);assert.notEqual(result.style,current.style);assert.equal(result.settings.background,'color');assert.equal(result.settings.keyColor,'#123456');assert.equal(result.settings.tolerance,17);assert.ok(validLook(result));}
+});
