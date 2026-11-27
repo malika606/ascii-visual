@@ -52,3 +52,11 @@
 .editor .effects-details summary,.editor .motion-details summary{padding-top:3px}
 @media(min-width:801px){.editor{--preview-height:43vh}}
 @media(max-width:800px){.editor{--preview-height:48vh}.editor .studio-tabs button{min-height:40px}.editor .compare-range{padding:0 13px}.editor .history-actions button{min-height:38px}}
+
+/* Keep the canvas in reach while browsing styles on a roomy desktop. */
+@media(min-width:1051px) and (min-height:900px){
+  .editor .stage{position:sticky;top:14px}
+}
+.editor .stage-bottom .jump-export{margin-left:auto;--face-top:#292929;--face-bottom:#171717;--edge:#454545;--highlight:#5c5c5c;color:#ddd;font-size:10px}
+.editor .export-heading h2{scroll-margin-top:18px}
+@media(max-width:800px){.editor .stage-bottom .jump-export{margin-left:0}.editor .studio-tabs button{font-size:11px}}

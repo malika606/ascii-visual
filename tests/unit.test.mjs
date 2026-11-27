@@ -104,3 +104,11 @@ test('standalone HTML includes only rendered data and a reduced motion fallback'
   assert.throws(()=>webDocument('https://invalid.example/image.png',1,1));
   assert.throws(()=>webDocument(png,0,1));
 });
+
+import {resolveOutputSide} from '../src/engine/quality.ts';
+test('resolved export side is always an advertised choice, including unusual native sizes',()=>{
+  const options=[{side:480},{side:320}];
+  assert.equal(resolveOutputSide(options,960),480);assert.equal(resolveOutputSide(options,390),320);
+  assert.equal(resolveOutputSide(options,200),320);assert.equal(resolveOutputSide([{side:64}],960),64);
+  const tall=videoResolutionChoices(3,1920,true);assert.equal(resolveOutputSide(tall,960),1920);
+});
