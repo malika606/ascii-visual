@@ -1,3 +1,42 @@
+# ASCII Visual 2.0.0 — release verification record
+
+## Verified application baseline
+
+- Main commit: `1221aeab8733fe866e29aaf171a34b1de33bfd0d` (merge of PR #9).
+- Product-polish head: `1dc3ec667e2200422e4d6dd468e3420316e45b21`.
+- [Verification run 46066540950](https://github.com/malika606/ascii-visual/actions/runs/46066540950): success.
+- [Deployment run 46066807047](https://github.com/malika606/ascii-visual/actions/runs/46066807047): success.
+- [Actual Chromium screenshots](https://github.com/malika606/ascii-visual/actions/runs/46066540950/artifacts/15231396224): artifact uploaded successfully (GitHub retention applies).
+- Release PR changes package version metadata and documentation, not application code or dependency versions. This baseline is not a claim that the new release PR has already passed CI.
+
+## Observed checks
+
+| Check | Result |
+| --- | --- |
+| npm ci | Passed; npm reported 0 vulnerabilities in this run. |
+| npm run typecheck | Passed |
+| npm test | 29 passed, 0 failed |
+| npm run build | Passed |
+| tests/ui_smoke.py through real Vite | Passed |
+| tests/hero_smoke.py through real Vite | Passed |
+| tests/studio_screens.py | Passed; real browser captures uploaded |
+| GitHub Pages build and deploy | Passed for merged PR #9 |
+
+The CI log confirms 18 distinct style frames and thumbnails, six independent effects, color palettes, combined PNG parity, ten creative-motion scenarios, two-pixel detail, custom ramps, history, comparison, local recipes across reload, actual 1920px PNG, standalone HTML with reduced-motion fallback and animated GIF, conditional HD video checks, real WebM/VP9 and MP4/H.264 downloads, source replacement resolution, upload errors, export cancellation and simulated encoder unavailability. Intro/lifecycle tests cover loop fade, media release, retained GIF/MP4 state, reduced motion, mobile viewports and poster fallbacks.
+
+## Remaining acceptance work
+
+- Manually inspect the generated artwork and screenshot artifact; no claim of aesthetic equivalence to ASCII Magic.
+- Test real Safari/iOS/Android devices, worst-case memory, sustained rendering performance and device-specific codec behavior.
+- Security audit results are time-specific; dependency warnings may change.
+- Release PR verification and deployment must complete separately.
+
+---
+
+# Historical verification (v1.3.1 and earlier)
+
+The following records describe older revisions, not current limitations or test counts.
+
 # ASCII Visual v1.3.1 — final technical verification
 
 ## Repository delivery (2026-11-28)
