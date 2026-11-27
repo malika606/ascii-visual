@@ -20,6 +20,6 @@ export function MotionPanel({settings,onChange,reduced}:{settings:Settings;onCha
       {supportsDirection(settings.effect)&&<label className="select">Direction<select aria-label="Motion direction" value={settings.motionDirection??'up'} onChange={e=>change({motionDirection:e.target.value as MotionDirection})}><option value="up">Up</option><option value="down">Down</option><option value="left">Left</option><option value="right">Right</option><option value="outward">Outward</option><option value="inward">Inward</option></select></label>}
       <p className="hint">Effective cycle: {motionPeriod(settings).toFixed(1)} s. Source videos keep their own timing. Restart to replay from zero.</p>
     </>}
-    {reduced&&<p className="hint">Motion is disabled in preview and exports.</p>}
+    {reduced&&<p className="hint">Generated motion is disabled. GIF and video sources can still be played.</p>}
   </details>;
 }

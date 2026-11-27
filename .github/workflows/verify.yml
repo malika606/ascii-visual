@@ -28,4 +28,12 @@ jobs:
           npm run dev -- --host 127.0.0.1 > /tmp/ascii-vite.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:5173/ >/dev/null && break; sleep 1; done
           ASCII_TEST_URL=http://127.0.0.1:5173 python tests/ui_smoke.py
-          ASCII_TEST_URL=http://127.0.0.1:5173 python tests/hero_smoke.py
+          ASCII_TEST_URL=http://127.0.0.1:5173 ASCII_SCREENSHOTS=artifacts/screenshots python tests/hero_smoke.py
+          ASCII_TEST_URL=http://127.0.0.1:5173 ASCII_SCREENSHOTS=artifacts/screenshots python tests/studio_screens.py
+      - name: Upload actual browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ascii-visual-browser-screenshots
+          path: artifacts/screenshots/
+          if-no-files-found: ignore

@@ -112,7 +112,7 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     page.get_by_role('button',name='Fine',exact=True).click()
     tab('Adjust');page.get_by_text('Advanced settings',exact=True).click();page.get_by_label('Reduce motion',exact=True).uncheck();page.get_by_text('Advanced settings',exact=True).click()
     tab('Motion')
-    motion=page.get_by_label('Motion',exact=True)
+    motion=page.get_by_role('combobox',name='Motion',exact=True)
     motion_frames=[]
     for name in ('assemble','disintegrate','breathing','rain','scan','spiral','flow','glitch','dissolve','shimmer'):
         motion.select_option(name)
@@ -159,7 +159,7 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     advanced=page.locator('#studio-panel-Adjust details.advanced')
     if not advanced.evaluate('(el)=>el.open'):advanced.locator('summary').click()
     page.get_by_label('Reduce motion',exact=True).uncheck()
-    tab('Motion');page.get_by_label('Motion',exact=True).select_option('breathing');page.get_by_role('slider',name='Motion duration',exact=True).fill('2')
+    tab('Motion');page.get_by_role('combobox',name='Motion',exact=True).select_option('breathing');page.get_by_role('slider',name='Motion duration',exact=True).fill('2')
     page.get_by_label('Format',exact=True).select_option('html-loop')
     animated_html=download('html-loop');html=animated_html.read_text()
     assert 'prefers-reduced-motion: no-preference' in html
@@ -191,6 +191,18 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
         assert probe['streams'][0]['codec_name']=='h264'
         page.get_by_label('Target frame rate',exact=True).select_option('24')
     print('PASS standalone HTML with reduced-motion fallback, embedded animated GIF and conditional full-HD video',flush=True)
+    # A replacement source must use the same resolution in the selector, label and actual export.
+    page.get_by_label('Format',exact=True).select_option('gif')
+    odd=pathlib.Path(tmp)/'odd-native.png';Image.new('RGB',(600,400),'#eac18b').save(odd)
+    page.locator('input[type=file]').set_input_files(str(odd));expect(page.get_by_text('odd-native.png',exact=True)).to_be_visible()
+    expect(page.get_by_label('Export resolution',exact=True)).to_have_value('480')
+    expect(page.locator('.actual-size').first).to_contain_text('480 × 320')
+    expect(page.get_by_label('Rendered ASCII artwork',exact=True)).to_have_attribute('width','480')
+    expect(page.get_by_role('button',name='Play',exact=True)).to_be_disabled()
+    assert Image.open(download('gif')).size==(480,320)
+    page.get_by_role('button',name='Go to export ↓',exact=True).click()
+    expect(page.get_by_role('heading',name='Save your artwork')).to_be_focused()
+    print('PASS export resolution stays consistent on source replacement, still playback idle and jump to export',flush=True)
     upload=page.locator('input[type=file]')
     def source(name):
         tab('Style');upload.set_input_files(str(FIXTURES/name));expect(page.locator('.status')).to_have_text('Source ready.');expect(page.get_by_text(name,exact=True)).to_be_visible();expect(page.get_by_role('button',name='Fine')).to_be_enabled();page.get_by_role('button',name='Fine').click()

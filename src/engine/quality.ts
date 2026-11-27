@@ -48,3 +48,8 @@ export function gifResolutionChoices(w:number,h:number){
 export function videoBitrate(w:number,h:number,fps:VideoFps,quality:VideoQuality){
   return Math.round(Math.max(750_000,Math.min(18_000_000,3_000_000*(w*h/(960*540))*(fps/24)*(quality==='high'?1.65:1))));
 }
+
+/** Resolve the actual output from the same list the user sees. Lists are descending. */
+export function resolveOutputSide(choices:readonly {side:number}[],requested:number){
+  return choices.find(r=>r.side<=requested)?.side??choices[choices.length-1]?.side??Math.max(1,requested);
+}
