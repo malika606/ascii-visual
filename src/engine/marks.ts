@@ -1,6 +1,7 @@
 import type {Cell} from './pixels.ts';
 import type {Settings} from './settings.ts';
 import {seed} from './motion.ts';
+import {colorMapper} from './palette.ts';
 
 // Ordered 4×4 threshold screen, anchored in artwork coordinates.
 const bayer=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
@@ -19,13 +20,7 @@ export function edgeStrength(map:Float32Array,cols:number,rows:number,x:number,y
   const gx=at(x+1,y)-at(x-1,y),gy=at(x,y+1)-at(x,y-1);
   return {strength:Math.min(1,Math.hypot(gx,gy)/160),angle:Math.atan2(gy,gx)+Math.PI/2};
 }
-export function markColor(c:Cell,s:Settings){
-  if(s.monochrome||!s.palette||s.palette==='source')return `rgb(${c.red},${c.green},${c.blue})`;
-  const l=c.light/255;
-  if(s.palette==='amber')return `rgb(${Math.round(255*l)},${Math.round(188*l)},${Math.round(68*l)})`;
-  if(s.palette==='paper')return '#e9dfc8';
-  return '#f3f3f3';
-}
+export function markColor(c:Cell,s:Settings){return colorMapper(s)(c);}
 function dot(ctx:CanvasRenderingContext2D,x:number,y:number,r:number){
   ctx.beginPath();ctx.arc(x,y,Math.max(.15,r),0,Math.PI*2);ctx.fill();
 }
