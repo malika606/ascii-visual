@@ -62,6 +62,35 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     with Image.open(download('png')) as exported:assert exported.size==(720,617) and exported.convert('RGBA').tobytes()==bytes(composite)
     page.get_by_role('button',name='Bloom',exact=True).click();page.locator('.effects-details summary').click()
     print('PASS 6 independent visual effects, palette changes, combined export pixels and reset',flush=True)
+    # New motion uses a separate still-image timeline, with true Canvas changes.
+    page.get_by_role('button',name='Fine',exact=True).click()
+    page.get_by_text('Advanced settings',exact=True).click();page.get_by_label('Reduce motion',exact=True).uncheck();page.get_by_text('Advanced settings',exact=True).click()
+    page.locator('.motion-details summary').click()
+    motion=page.get_by_label('Motion',exact=True)
+    motion_frames=[]
+    for name in ('assemble','disintegrate','breathing','rain','scan','spiral','flow','glitch','dissolve','shimmer'):
+        motion.select_option(name)
+        seek_motion=page.get_by_role('slider',name='Motion position',exact=True)
+        seek_motion.fill('0');page.wait_for_timeout(60);first=frame()
+        seek_motion.fill('0.9');page.wait_for_timeout(60);second=frame()
+        assert first!=second,name
+        motion_frames.append(second)
+    assert len(set(motion_frames))==10
+    motion.select_option('assemble');page.get_by_label('Motion playback').select_option('once');page.get_by_role('slider',name='Motion duration').fill('2')
+    seek_motion.fill('2');page.wait_for_timeout(60);assembled=frame()
+    seek_motion.fill('0');page.wait_for_timeout(60);assert frame()!=assembled
+    page.get_by_role('slider',name='Motion intensity').fill('0');page.wait_for_timeout(60);assert frame()==assembled
+    page.get_by_role('slider',name='Motion intensity').fill('100');page.get_by_label('Motion playback').select_option('loop')
+    motion.select_option('breathing');page.get_by_role('slider',name='Motion duration').fill('2')
+    animated=download('gif')
+    with Image.open(animated) as g:
+        assert g.n_frames==20
+        g.seek(0);first=g.convert('RGB').tobytes();g.seek(5);assert first!=g.convert('RGB').tobytes()
+    page.get_by_label('Format',exact=True).select_option('png')
+    page.get_by_text('Advanced settings',exact=True).click();page.get_by_label('Reduce motion',exact=True).check();page.get_by_text('Advanced settings',exact=True).click()
+    expect(seek_motion).to_be_disabled()
+    page.get_by_role('button',name='Bloom',exact=True).click();page.locator('.motion-details summary').click()
+    print('PASS ten creative animations change Canvas, still scrub, once, intensity, GIF cycle and reduced motion',flush=True)
     # Dense preview and a real high-resolution PNG on a generated source.
     large=pathlib.Path(tmp)/'large.png';Image.new('RGB',(1920,1080),'#ee99bb').save(large)
     page.locator('input[type=file]').set_input_files(str(large));expect(page.get_by_text('large.png',exact=True)).to_be_visible()

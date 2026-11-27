@@ -34,3 +34,28 @@ import {colorMapper,gradientColor,rgbFromHex} from '../src/engine/palette.ts';
 import {normalizedEffects,distortionOffset,effectScale} from '../src/engine/effects.ts';
 test('gradient palettes preserve endpoints, shade dark tones and safely parse custom colors',()=>{assert.deepEqual(rgbFromHex('#12abFF'),[18,171,255]);assert.deepEqual(rgbFromHex('oops'),[255,255,255]);assert.equal(gradientColor('#ff0000','#0000ff',0),'rgb(0,0,0)');assert.equal(gradientColor('#ff0000','#0000ff',255),'rgb(0,0,255)');const c={x:0,y:0,glyph:'@',red:1,green:2,blue:3,light:255};assert.equal(colorMapper({...defaultSettings,palette:'custom',gradientLow:'#000000',gradientHigh:'#ff0000'})(c),'rgb(255,0,0)');assert.equal(colorMapper({...defaultSettings,palette:'rose',monochrome:true})(c),'rgb(1,2,3)');});
 test('effect amounts clamp independently and no stack remains the default',()=>{assert.deepEqual(normalizedEffects(),{glow:0,rgbSplit:0,scanlines:0,grain:0,distortion:0,vignette:0});assert.deepEqual(normalizedEffects({glow:180,rgbSplit:-1,grain:NaN,vignette:45}),{glow:100,rgbSplit:0,scanlines:0,grain:0,distortion:0,vignette:45});assert.equal(effectScale(3840,2160),4);for(let y=0;y<100;y++)assert.ok(Math.abs(distortionOffset(y,100,100))<=18);});
+
+import {creativeMotionLabels,motionPeriod,motionPhase,motionDirection,creativeFrame} from '../src/engine/creativeMotion.ts';
+test('ten creative motions are deterministic, periodic, bounded and obey reduced motion/intensity',()=>{
+  const c={x:13,y:8,glyph:'@',red:255,green:90,blue:170,light:150};
+  const staticMark={opacity:1,dx:0,dy:0,glyph:'@'};
+  for(const effect of Object.keys(creativeMotionLabels)){
+    const s={...defaultSettings,effect,motionDuration:3,speed:1};
+    const a=animate(c,.7,40,30,s),b=animate(c,.7,40,30,s);
+    assert.deepEqual(a,b);assert.ok(a.opacity>=0&&a.opacity<=1&&Number.isFinite(a.dx)&&Number.isFinite(a.dy));
+    const end=animate(c,3.7,40,30,s);for(const key of ['opacity','dx','dy'])assert.ok(Math.abs(a[key]-end[key])<1e-8,effect);
+    assert.deepEqual(animate(c,.7,40,30,s,true),staticMark);
+    assert.deepEqual(animate(c,.7,40,30,{...s,motionIntensity:0}),staticMark);
+  }
+});
+test('creative duration is bounded, once clamps, and directions are distinct',()=>{
+  const s={...defaultSettings,effect:'assemble',motionDuration:4,speed:2};
+  assert.equal(motionPeriod(s),2);assert.equal(motionPeriod({...s,speed:.25}),5);assert.equal(motionPeriod({...s,motionDuration:1,speed:2}),1);
+  assert.equal(motionPhase(7,{...s,motionLoop:false}),1);assert.equal(motionPhase(2,s),0);
+  assert.equal(motionDirection('up',.2,.3).y,-1);assert.equal(motionDirection('right',.2,.3).x,1);
+  assert.deepEqual(creativeFrame(s,.5),{phase:.25,strength:1,loop:true,direction:'up'});
+  assert.equal(exportDuration(0,'image',s),2);assert.equal(gifExportDuration(0,'image',s),2);assert.equal(exportDuration(8,'video',s),8);
+  const c={x:13,y:8,glyph:'@',red:255,green:90,blue:170,light:150};
+  assert.equal(animate(c,0,40,30,{...s,motionLoop:false}).opacity,0);
+  assert.equal(animate(c,2,40,30,{...s,motionLoop:false}).opacity,1);
+});
