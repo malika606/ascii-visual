@@ -1,7 +1,7 @@
 import type {Settings,Effect,BackgroundMode} from '../engine/settings.ts';
 import {presets} from '../engine/settings.ts';
 export const ramps = {Classic:presets.Bloom.ramp,Numbers:'0123456789',Binary:'01',Blocks:'░▒▓█'};
-const controls=[{key:'cell',label:'Detail',min:6,max:24,step:1,unit:' px'},{key:'contrast',label:'Contrast',min:.5,max:2,step:.05,unit:'×'},{key:'saturation',label:'Color intensity',min:0,max:2,step:.05,unit:'×'},{key:'threshold',label:'Dark threshold',min:0,max:100,step:1,unit:''},{key:'speed',label:'Speed',min:.25,max:2,step:.05,unit:'×'}] as const;
+const controls=[{key:'cell',label:'Detail',min:2,max:32,step:1,unit:' px'},{key:'contrast',label:'Contrast',min:.5,max:2,step:.05,unit:'×'},{key:'saturation',label:'Color intensity',min:0,max:2,step:.05,unit:'×'},{key:'threshold',label:'Dark threshold',min:0,max:100,step:1,unit:''},{key:'speed',label:'Speed',min:.25,max:2,step:.05,unit:'×'}] as const;
 export function SettingsPanel({settings,onChange,disabled,style,onStyle,reduced,onReduced}:{settings:Settings;onChange:(s:Settings)=>void;disabled:boolean;style:string;onStyle:(s:string)=>void;reduced:boolean;onReduced:(r:boolean)=>void}){
   const range=(c:typeof controls[number])=><label className="range" key={c.key}><span>{c.label}<output>{Number(settings[c.key].toFixed(2))}{c.unit}</output></span><input aria-label={c.label} aria-describedby={c.key==='cell'?'detail-help':undefined} type="range" min={c.min} max={c.max} step={c.step} value={settings[c.key]} onChange={e=>onChange({...settings,[c.key]:Number(e.target.value)})}/></label>;
   const chosen=Object.entries(ramps).find(([,v])=>v===settings.ramp)?.[0]??'preset';

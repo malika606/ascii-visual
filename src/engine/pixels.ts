@@ -7,7 +7,7 @@ export function glyphForBrightness(value:number,ramp:string):string {
 }
 export interface Cell {x:number;y:number;glyph:string;red:number;green:number;blue:number;light:number}
 export function pixelsToCells(data:Uint8ClampedArray,cols:number,rows:number,s:Settings):Cell[] {
-  const cells:Cell[]=[];
+  const cells:Cell[]=[];const chars=Array.from(s.ramp);
   const key=/^#[0-9a-f]{6}$/i.test(s.keyColor)?parseInt(s.keyColor.slice(1),16):0xffffff;
   const kr=key>>16,kg=(key>>8)&255,kb=key&255;
   for(let i=0;i<cols*rows;i++){
@@ -19,7 +19,7 @@ export function pixelsToCells(data:Uint8ClampedArray,cols:number,rows:number,s:S
     const l=luminance(r,g,b); if(l<=s.threshold || alpha===0) continue;
     const light=clamp((l-128)*s.contrast+128);
     const tone=(c:number)=>Math.round(clamp(((l+(c-l)*s.saturation)-128)*s.contrast+128));
-    cells.push({x:i%cols,y:Math.floor(i/cols),glyph:glyphForBrightness(light,s.ramp),red:s.monochrome?Math.round(light*.35):tone(r),green:s.monochrome?Math.round(light):tone(g),blue:s.monochrome?Math.round(light*.55):tone(b),light});
+    cells.push({x:i%cols,y:Math.floor(i/cols),glyph:chars[Math.round(light/255*(chars.length-1))]??' ',red:s.monochrome?Math.round(light*.35):tone(r),green:s.monochrome?Math.round(light):tone(g),blue:s.monochrome?Math.round(light*.55):tone(b),light});
   } return cells;
 }
 export function fitSize(w:number,h:number,max=960){const ratio=Math.min(1,max/Math.max(w,h));return {width:Math.max(1,Math.round(w*ratio)),height:Math.max(1,Math.round(h*ratio))};}

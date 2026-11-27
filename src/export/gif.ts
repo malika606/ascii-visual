@@ -33,7 +33,7 @@ export async function exportGif(file:File,settings:Settings,signal:AbortSignal,o
   const source=await loadSource(file,signal);try{
     const size=outputSize(source.width,source.height,Math.min(side,GIF_MAX_SIDE)),canvas=document.createElement('canvas'),renderer=new Renderer(canvas),encoder=new GifEncoder(size.width,size.height),duration=gifExportDuration(source.duration,source.kind),count=Math.ceil(duration*GIF_FPS);
     for(let i=0;i<count;i++){signal.throwIfAborted();const t=i/GIF_FPS;const mediaTime=source.kind==='image'?0:t%source.duration;if(source.kind==='video')await source.seek(mediaTime,signal);
-      renderer.draw(source.frame(mediaTime),source.width,source.height,settings,t,false,Math.min(side,GIF_MAX_SIDE));encoder.frame(canvas.getContext('2d')!.getImageData(0,0,size.width,size.height).data);onProgress((i+1)/count);await new Promise<void>(r=>setTimeout(r,0));}
+      renderer.draw(source.frame(mediaTime),source.width,source.height,settings,t,false,Math.min(side,GIF_MAX_SIDE),false,{staticSource:source.kind==='image'});encoder.frame(canvas.getContext('2d')!.getImageData(0,0,size.width,size.height).data);onProgress((i+1)/count);await new Promise<void>(r=>setTimeout(r,0));}
     signal.throwIfAborted();return encoder.finish();
   }finally{source.dispose();}
 }
