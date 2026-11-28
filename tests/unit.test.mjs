@@ -232,3 +232,16 @@ test('spotlight preserves black, alpha and falls off spatially; sharpen increase
  postPixels(edge,3,1,{sharpen:100});assert.ok(edge[4]>100&&edge[0]<40);
  assert.ok(validLook({style:'Fine',settings:{...presets.Fine,postGamma:1.5,lightAmount:70,glowRadius:20}}));
 });
+
+import {cropGeometry,initialTransform} from '../src/media/transform.ts';
+import {maskCoverageMapper} from '../src/engine/pixels.ts';
+test('crop geometry keeps valid pixels, trims before rotation and swaps dimensions',()=>{
+ assert.deepEqual(cropGeometry(720,480,initialTransform),{x:0,y:0,cw:720,ch:480,width:720,height:480});
+ assert.deepEqual(cropGeometry(720,480,{...initialTransform,left:25,right:25,rotation:90}),{x:180,y:0,cw:360,ch:480,width:480,height:360});
+ const g=cropGeometry(3,2,{...initialTransform,left:90,right:90,top:90,bottom:90});assert.ok(g.width>=1&&g.height>=1);
+});
+test('soft masks keep excluded pixels hidden and fade only near the threshold',()=>{
+ const s={...defaultSettings,threshold:20,maskFeather:20,contrast:1},mask=maskCoverageMapper(s),data=Uint8ClampedArray.from([10,10,10,255,40,40,40,255,120,120,120,255,255,255,255,0]);
+ assert.equal(mask(data,0),0);assert.ok(mask(data,4)>0&&mask(data,4)<1);assert.equal(mask(data,8),1);assert.equal(mask(data,12),0);
+ const cells=pixelsToCells(data,4,1,s);assert.equal(cells.length,2);assert.ok(cells[0].maskOpacity>0&&cells[0].maskOpacity<1);assert.equal(cells[1].maskOpacity,undefined);
+});

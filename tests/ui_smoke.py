@@ -97,6 +97,30 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
         with page.expect_download(timeout=30000) as d:page.get_by_role('button',name='Download',exact=True).click()
         output=pathlib.Path(tmp)/d.value.suggested_filename;d.value.save_as(output);return output
     assert Image.open(download('png')).size==(720,617)
+    # Zoom is view-only; framing is shared by comparison and exported frames.
+    art=page.get_by_label('Rendered ASCII artwork',exact=True);before=art.evaluate('(c)=>c.toDataURL()')
+    width=art.bounding_box()['width']
+    page.get_by_label('Preview zoom',exact=True).select_option('200')
+    assert art.bounding_box()['width']>width*1.5 and art.evaluate('(c)=>c.toDataURL()')==before
+    assert Image.open(download('png')).size==(720,617)
+    page.get_by_label('Preview zoom',exact=True).select_option('100')
+    page.get_by_text('Crop & rotate',exact=True).click()
+    page.get_by_role('slider',name='Crop left',exact=True).fill('50')
+    page.get_by_role('button',name='Rotate right',exact=True).click()
+    assert art.evaluate('(c)=>c.height>c.width') is False
+    # Cropped bouquet is portrait before rotation, landscape after rotation.
+    page.get_by_role('button',name='Compare',exact=True).click()
+    original=page.get_by_label('Original source frame',exact=True)
+    assert original.evaluate('(c)=>[c.width,c.height]')==art.evaluate('(c)=>[c.width,c.height]')
+    page.get_by_role('button',name='Compare',exact=True).click()
+    with Image.open(download('png')) as out:assert list(out.size)==art.evaluate('(c)=>[c.width,c.height]')
+    with Image.open(download('gif')) as out:assert list(out.size)==art.evaluate('(c)=>[c.width,c.height]')
+    page.get_by_label('Format',exact=True).select_option('png')
+    page.get_by_role('button',name='Reset framing',exact=True).click()
+    page.get_by_text('Crop & rotate',exact=True).click()
+    page.get_by_label('Export resolution').select_option('720')
+    assert art.evaluate('(c)=>c.toDataURL()')==before
+    print('PASS view-only zoom, non-destructive crop/rotation, comparison and PNG/GIF dimensions',flush=True)
     # Backdrop and mark layer controls affect actual pixels, not CSS.
     page.get_by_role('button',name='Fine',exact=True).click();tab('Color')
     art=page.get_by_label('Rendered ASCII artwork',exact=True)

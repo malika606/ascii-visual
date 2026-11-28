@@ -1,5 +1,6 @@
 import {Renderer} from '../engine/renderer.ts';
 import type {Settings} from '../engine/settings.ts';
+import {initialTransform,transformedSource,type SourceTransform} from '../media/transform.ts';
 import {loadSource} from '../media/source.ts';
 import {outputSize} from '../engine/pixels.ts';
 import {exportDuration} from './record.ts';
@@ -29,8 +30,8 @@ export class GifEncoder {
   }
   finish(){if(!this.count)throw Error('GIF has no frames.');this.add([0x3b]);return new Blob(this.parts.map(p=>p.slice().buffer),{type:'image/gif'});}
 }
-export async function exportGif(file:File,settings:Settings,signal:AbortSignal,onProgress:(p:number)=>void,side:number){
-  const source=await loadSource(file,signal);try{
+export async function exportGif(file:File,settings:Settings,signal:AbortSignal,onProgress:(p:number)=>void,side:number,transform:SourceTransform=initialTransform){
+  const raw=await loadSource(file,signal);let source=raw;try{source=transformedSource(raw,transform);
     const size=outputSize(source.width,source.height,Math.min(side,GIF_MAX_SIDE)),canvas=document.createElement('canvas'),renderer=new Renderer(canvas),encoder=new GifEncoder(size.width,size.height),duration=gifExportDuration(source.duration,source.kind,settings),count=Math.ceil(duration*GIF_FPS);
     for(let i=0;i<count;i++){signal.throwIfAborted();const t=i/GIF_FPS;const mediaTime=source.kind==='image'?0:t%source.duration;if(source.kind==='video')await source.seek(mediaTime,signal);
       renderer.draw(source.frame(mediaTime),source.width,source.height,settings,t,false,Math.min(side,GIF_MAX_SIDE),false,{staticSource:source.kind==='image',opaque:true});encoder.frame(canvas.getContext('2d')!.getImageData(0,0,size.width,size.height).data);onProgress((i+1)/count);await new Promise<void>(r=>setTimeout(r,0));}
