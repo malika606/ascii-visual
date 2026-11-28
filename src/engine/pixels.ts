@@ -6,20 +6,26 @@ export function glyphForBrightness(value:number,ramp:string):string {
   const chars=Array.from(ramp); if (!chars.length) return ' ';
   return chars[Math.round(clamp(value)/255*(chars.length-1))];
 }
-export interface Cell {x:number;y:number;glyph:string;red:number;green:number;blue:number;light:number;colorLight?:number}
+export interface Cell {x:number;y:number;glyph:string;red:number;green:number;blue:number;light:number;colorLight?:number;brailleBits?:number;ditherBit?:number}
+export function toneMapper(s:Settings){
+  const curve=Float64Array.from({length:256},(_,i)=>softContrast(toneValue(i,s),s.contrast));
+  return (v:number)=>{const x=clamp(v),lo=Math.floor(x),hi=Math.min(255,lo+1);return curve[lo]+(curve[hi]-curve[lo])*(x-lo);};
+}
+export function sourceLightMapper(s:Settings){
+  const key=/^#[0-9a-f]{6}$/i.test(s.keyColor)?parseInt(s.keyColor.slice(1),16):0xffffff;
+  const kr=key>>16,kg=(key>>8)&255,kb=key&255,tolerance=clamp(s.tolerance,0,100)*2.55;
+  return (data:Uint8ClampedArray,p:number)=>{
+    const r=data[p],g=data[p+1],b=data[p+2],alpha=data[p+3]/255;
+    if(alpha===0||s.background==='light'&&luminance(r,g,b)>=255-tolerance||s.background==='color'&&Math.hypot(r-kr,g-kg,b-kb)/Math.sqrt(3)<=tolerance)return -1;
+    const l=luminance(r*alpha,g*alpha,b*alpha);return l<=s.threshold?-1:l;
+  };
+}
 export function pixelsToCells(data:Uint8ClampedArray,cols:number,rows:number,s:Settings):Cell[] {
   const cells:Cell[]=[];const chars=Array.from(s.ramp);
-  const curve=Float64Array.from({length:256},(_,i)=>softContrast(toneValue(i,s),s.contrast));
-  const mapTone=(v:number)=>{const x=clamp(v),lo=Math.floor(x),hi=Math.min(255,lo+1);return curve[lo]+(curve[hi]-curve[lo])*(x-lo);};
-  const key=/^#[0-9a-f]{6}$/i.test(s.keyColor)?parseInt(s.keyColor.slice(1),16):0xffffff;
-  const kr=key>>16,kg=(key>>8)&255,kb=key&255;
+  const mapTone=toneMapper(s),sourceLight=sourceLightMapper(s);
   for(let i=0;i<cols*rows;i++){
-    const p=i*4, alpha=data[p+3]/255;
-    // Key the sampled original RGB before alpha, saturation or contrast.
-    if(s.background==='light' && luminance(data[p],data[p+1],data[p+2])>=255-clamp(s.tolerance,0,100)*2.55)continue;
-    if(s.background==='color' && Math.hypot(data[p]-kr,data[p+1]-kg,data[p+2]-kb)/Math.sqrt(3)<=clamp(s.tolerance,0,100)*2.55)continue;
-    const r=data[p]*alpha,g=data[p+1]*alpha,b=data[p+2]*alpha;
-    const l=luminance(r,g,b); if(l<=s.threshold || alpha===0) continue;
+    const p=i*4,l=sourceLight(data,p);if(l<0)continue;
+    const alpha=data[p+3]/255,r=data[p]*alpha,g=data[p+1]*alpha,b=data[p+2]*alpha;
     const corrected=mapTone(l);
     const light=s.invert?255-corrected:corrected;
     const colorLight=boostColor(corrected,s);

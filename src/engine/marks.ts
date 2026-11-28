@@ -29,10 +29,10 @@ export function drawMark(ctx:CanvasRenderingContext2D,c:Cell,s:Settings,glyph:st
   const rand=seed(c.x,c.y),other=seed(c.x+311,c.y+71);
   switch(mode){
     case 'glyph':ctx.fillText(glyph,x,y);break;
-    case 'braille':ctx.fillText(brailleGlyph(c.light),x,y);break;
+    case 'braille':ctx.fillText(c.brailleBits===undefined?brailleGlyph(c.light):String.fromCodePoint(0x2800+c.brailleBits),x,y);break;
     case 'pixel':ctx.fillRect(x-cw*.48,y-ch*.48,cw*.96,ch*.96);break;
     case 'dots':dot(ctx,x,y,unit*.49*Math.sqrt(tone));break;
-    case 'dither':if(ditherOn(c.light,c.x,c.y))ctx.fillRect(x-cw*.43,y-ch*.43,cw*.86,ch*.86);break;
+    case 'dither':if(c.ditherBit===undefined?ditherOn(c.light,c.x,c.y):c.ditherBit===1)ctx.fillRect(x-cw*.43,y-ch*.43,cw*.86,ch*.86);break;
     case 'stipple':if(rand<tone)dot(ctx,x+(other-.5)*cw*.65,y+(rand-.5)*ch*.65,unit*.22);break;
     case 'led':dot(ctx,x,y,unit*.37);break;
     case 'particles':dot(ctx,x+(rand-.5)*cw*.95,y+(other-.5)*ch*.95,unit*(.08+.3*tone));break;
