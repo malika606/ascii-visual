@@ -1,4 +1,6 @@
 import type {Settings,StylePalette,VisualEffects} from '../engine/settings.ts';
+import {PostPanel} from './PostPanel.tsx';
+import {postDefaults} from '../engine/post.ts';
 import {noEffects} from '../engine/settings.ts';
 import {gradientStops,paletteLabels} from '../engine/palette.ts';
 import {effectNames,normalizedEffects} from '../engine/effects.ts';
@@ -25,11 +27,11 @@ export function EffectsPanel({settings,onChange,section}:{settings:Settings;onCh
       <label>Highlights <input type="color" aria-label="Highlight color" value={settings.gradientHigh??'#ffb6df'} onChange={e=>onChange({...settings,gradientHigh:e.target.value})}/></label>
     </div>}
     </>}
-    {section==='effects'&&<details className="advanced effects-details" open={true}><summary>Visual effects <span className="effect-count">{active?active+' active':'Off'}</span></summary>
+    {section==='effects'&&<><details className="advanced effects-details" open={true}><summary>Visual effects <span className="effect-count">{active?active+' active':'Off'}</span></summary>
       <p className="hint">{settings.backdrop==='transparent'?'Effects are paused while the backdrop is transparent. Choose an opaque backdrop to use them.':'Combine effects; they are baked into the downloaded artwork.'}</p>
       {effectNames.map(key=><label className="range" key={key} title={descriptions[key]}><span>{labels[key]}<output>{values[key]}%</output></span><input type="range" aria-label={labels[key]} disabled={settings.backdrop==='transparent'} min={0} max={100} step={1} value={values[key]} onChange={e=>change(key,Number(e.target.value))}/></label>)}
-      <button type="button" className="effect-reset" disabled={!active} onClick={()=>onChange({...settings,effects:{...noEffects}})}>Reset effects</button>
+      <button type="button" className="effect-reset" disabled={!active&&!Object.keys(postDefaults).some(k=>settings[k as keyof typeof postDefaults]!==undefined&&settings[k as keyof typeof postDefaults]!==postDefaults[k as keyof typeof postDefaults])} onClick={()=>onChange({...settings,...postDefaults,effects:{...noEffects}})}>Reset effects</button>
       <p className="hint">Effects are static and do not add flashing. High settings can soften fine detail.</p>
-    </details>}
+    </details><PostPanel settings={settings} onChange={onChange}/></>}
   </section>;
 }
