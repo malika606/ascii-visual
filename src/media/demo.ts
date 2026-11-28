@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 // The supplied GIF is a local bundled asset, loaded only when opening the editor.
 export const demoName='ASCII Visual — cat.gif';
 const assets=import.meta.glob('../assets/demo-cat.gif',{eager:true,query:'?url',import:'default'}) as Record<string,string>;

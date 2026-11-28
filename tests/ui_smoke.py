@@ -418,7 +418,7 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
             assert hash_frame()==old_frame;assert page.get_by_role('slider',name='Playback position').input_value()==old_position;assert page.get_by_role('slider',name='Detail').input_value()==old_detail
     source('still.png');expect(page.get_by_role('alert')).to_have_count(0);assert hash_frame()!=old_frame
     page.set_viewport_size({'width':1280,'height':900});print('PASS unsupported, oversized and corrupt uploads: one visible alert near Upload at desktop/390/320, retained source/frame/settings/time, successful next upload',flush=True)
-    page.get_by_role('button',name='Use demo').click();expect(page.get_by_text('ASCII Visual — original bouquet.png')).to_be_visible();expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled()
+    page.get_by_role('button',name='Use demo').click();expect(page.get_by_text('ASCII Visual — cat.gif',exact=True)).to_be_visible();expect(page.get_by_role('button',name='Download',exact=True)).to_be_enabled()
     tab('Adjust');page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth <= innerWidth');expect(page.get_by_role('button',name='Download',exact=True)).to_be_visible();page.emulate_media(reduced_motion='reduce');expect(page.get_by_text('Reduced motion enabled')).to_be_visible();assert not errors,errors
     for w,h in [(390,844),(320,568)]:
         page.set_viewport_size({'width':w,'height':h});assert page.evaluate('document.documentElement.scrollWidth <= innerWidth');assert page.locator('.stage').bounding_box()['y']<page.locator('.appearance').bounding_box()['y']<page.locator('.export-panel').bounding_box()['y']
