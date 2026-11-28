@@ -6,6 +6,7 @@ import {sameSettings,validRamp,surpriseLook,type Look} from '../engine/studio.ts
 import {StyleLibrary} from './StyleLibrary.tsx';
 import {EffectsPanel} from './EffectsPanel.tsx';
 import {MotionPanel} from './MotionPanel.tsx';
+import {CompositingPanel} from './CompositingPanel.tsx';
 import {TonalPanel} from './TonalPanel.tsx';
 import {SavedLooks} from './SavedLooks.tsx';
 export const ramps = {Classic:presets.Bloom.ramp,Numbers:'0123456789',Binary:'01',Blocks:'░▒▓█'};
@@ -62,6 +63,7 @@ export function SettingsPanel({settings,onChange,disabled,style,reduced,onReduce
       </div></details>
     </div>
     <div role="tabpanel" id="studio-panel-Color" aria-labelledby="studio-tab-Color" hidden={tab!=='Color'}>
+      <CompositingPanel settings={settings} onChange={onChange}/>
       <EffectsPanel settings={settings} onChange={onChange} section="color"/>
       <label className="check"><input type="checkbox" checked={settings.monochrome} onChange={e=>onChange({...settings,monochrome:e.target.checked})}/> Green monochrome</label>
     </div>

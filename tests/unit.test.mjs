@@ -148,3 +148,12 @@ test('auto exposure is less aggressive on already bright sources',()=>{
  assert.ok(dark.gamma>bright.gamma&&dark.brightness>bright.brightness);
  assert.equal(bright.colorBoost,100);
 });
+
+import {compositeSettings,hybridSettings} from '../src/engine/composite.ts';
+test('compositing defaults are pure ASCII, hybrid is opt-in and transparent uses normal blend',()=>{
+ const d=compositeSettings(defaultSettings);assert.equal(d.backdrop,'black');assert.equal(d.markOpacity,1);assert.equal(d.blend,'source-over');
+ const h=compositeSettings({...defaultSettings,...hybridSettings});assert.equal(h.backdrop,'blurred');assert.equal(h.opacity,.45);assert.equal(h.blend,'screen');
+ assert.equal(compositeSettings({...defaultSettings,backdrop:'transparent',markBlend:'multiply'}).blend,'source-over');
+ assert.ok(validLook({style:'Fine',settings:{...presets.Fine,...hybridSettings}}));
+ assert.ok(!validLook({style:'Fine',settings:{...presets.Fine,markOpacity:101}}));
+});
