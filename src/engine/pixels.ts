@@ -1,5 +1,5 @@
 import type {Settings} from './settings.ts';
-import {toneValue,boostColor} from './tonal.ts';
+import {toneValue,boostColor,softContrast,gainRgb} from './tonal.ts';
 export const clamp = (n:number,min=0,max=255) => Math.max(min,Math.min(max,n));
 export const luminance = (r:number,g:number,b:number) => .2126*r+.7152*g+.0722*b;
 export function glyphForBrightness(value:number,ramp:string):string {
@@ -9,6 +9,8 @@ export function glyphForBrightness(value:number,ramp:string):string {
 export interface Cell {x:number;y:number;glyph:string;red:number;green:number;blue:number;light:number;colorLight?:number}
 export function pixelsToCells(data:Uint8ClampedArray,cols:number,rows:number,s:Settings):Cell[] {
   const cells:Cell[]=[];const chars=Array.from(s.ramp);
+  const curve=Float64Array.from({length:256},(_,i)=>softContrast(toneValue(i,s),s.contrast));
+  const mapTone=(v:number)=>{const x=clamp(v),lo=Math.floor(x),hi=Math.min(255,lo+1);return curve[lo]+(curve[hi]-curve[lo])*(x-lo);};
   const key=/^#[0-9a-f]{6}$/i.test(s.keyColor)?parseInt(s.keyColor.slice(1),16):0xffffff;
   const kr=key>>16,kg=(key>>8)&255,kb=key&255;
   for(let i=0;i<cols*rows;i++){
@@ -18,11 +20,16 @@ export function pixelsToCells(data:Uint8ClampedArray,cols:number,rows:number,s:S
     if(s.background==='color' && Math.hypot(data[p]-kr,data[p+1]-kg,data[p+2]-kb)/Math.sqrt(3)<=clamp(s.tolerance,0,100)*2.55)continue;
     const r=data[p]*alpha,g=data[p+1]*alpha,b=data[p+2]*alpha;
     const l=luminance(r,g,b); if(l<=s.threshold || alpha===0) continue;
-    const corrected=toneValue(clamp((l-128)*s.contrast+128),s);
+    const corrected=mapTone(l);
     const light=s.invert?255-corrected:corrected;
     const colorLight=boostColor(corrected,s);
-    const tone=(c:number)=>Math.round(boostColor(toneValue(clamp(((l+(c-l)*s.saturation)-128)*s.contrast+128),s),s));
-    cells.push({x:i%cols,y:Math.floor(i/cols),glyph:chars[Math.round(light/255*(chars.length-1))]??' ',red:s.monochrome?Math.round(colorLight*.35):tone(r),green:s.monochrome?Math.round(colorLight):tone(g),blue:s.monochrome?Math.round(colorLight*.55):tone(b),light,colorLight});
+    // Scale a gamut-safe saturated RGB vector by the corrected luminance.
+    // Compression toward the original luminance keeps saturated hues from clipping independently.
+    const dr=r-l,dg=g-l,db=b-l;
+    const positive=Math.max(dr,dg,db,0),negative=Math.max(-dr,-dg,-db,0);
+    const saturation=Math.max(0,Math.min(s.saturation,positive?(255-l)/positive:Infinity,negative?l/negative:Infinity));
+    const [red,green,blue]=gainRgb(l+dr*saturation,l+dg*saturation,l+db*saturation,corrected/Math.max(l,1e-6)*(s.colorBoost??100)/100);
+    cells.push({x:i%cols,y:Math.floor(i/cols),glyph:chars[Math.round(light/255*(chars.length-1))]??' ',red:s.monochrome?Math.round(colorLight*.35):red,green:s.monochrome?Math.round(colorLight):green,blue:s.monochrome?Math.round(colorLight*.55):blue,light,colorLight});
   } return cells;
 }
 export function fitSize(w:number,h:number,max=960){const ratio=Math.min(1,max/Math.max(w,h));return {width:Math.max(1,Math.round(w*ratio)),height:Math.max(1,Math.round(h*ratio))};}

@@ -5,6 +5,7 @@ import {animate} from './motion.ts';
 import {creativeFrame,isCreativeMotion} from './creativeMotion.ts';
 import {drawMark,edgeStrength} from './marks.ts';
 import {colorMapper} from './palette.ts';
+import {GlyphCoverage,MARK_FONT} from './coverage.ts';
 import {EffectsRenderer} from './effects.ts';
 import type {Settings} from './settings.ts';
 export class Renderer {
@@ -13,6 +14,7 @@ export class Renderer {
   private ctx:CanvasRenderingContext2D;
   private canvas:HTMLCanvasElement;
   private effects=new EffectsRenderer();
+  private coverage=new GlyphCoverage();
   private cached?:{frame:CanvasImageSource;settings:Settings;cols:number;rows:number;cells:Cell[]};
   constructor(canvas:HTMLCanvasElement){this.canvas=canvas;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Canvas 2D is unavailable.');this.ctx=ctx;}
   draw(frame:CanvasImageSource,w:number,h:number,s:Settings,t:number,reduced=false,side=MAX_RENDER_SIDE,even=false,options:{budget?:number;highResolution?:boolean;staticSource?:boolean;videoResolution?:boolean}={}){
@@ -32,8 +34,9 @@ export class Renderer {
     const edges=s.mode==='contours'?new Float32Array(cols*rows):undefined;
     if(edges)for(const c of cells)edges[c.y*cols+c.x]=c.light;
     ctx.globalAlpha=1;ctx.fillStyle='#000';ctx.fillRect(0,0,canvas.width,canvas.height);
-    const scale=Math.min(size.width/w,size.height/h),contentW=w*scale,contentH=h*scale;const ox=(size.width-contentW)/2,oy=(size.height-contentH)/2,cw=contentW/cols,ch=contentH/rows;ctx.font=`${s.glyphWeight??400} ${Math.min(ch,cw/.62)*.96}px ui-monospace, Consolas, monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
-    for(const c of cells){const a=animate(c,t,cols,rows,s,reduced,chars,motion);if(a.opacity<.01)continue;ctx.globalAlpha=a.opacity;ctx.fillStyle=color(c);drawMark(ctx,c,s,a.glyph,ox+(c.x+.5+a.dx)*cw,oy+(c.y+.5+a.dy)*ch,cw,ch,edges?edgeStrength(edges,cols,rows,c.x,c.y):undefined);}
+    const scale=Math.min(size.width/w,size.height/h),contentW=w*scale,contentH=h*scale;const ox=(size.width-contentW)/2,oy=(size.height-contentH)/2,cw=contentW/cols,ch=contentH/rows;ctx.font=`${s.glyphWeight??400} ${Math.min(ch,cw/.62)*.96}px ${MARK_FONT}`;ctx.textAlign='center';ctx.textBaseline='middle';
+    const gains=(!s.mode||s.mode==='glyph')&&(s.monochrome||s.palette!=='white'&&s.palette!=='paper')?this.coverage.prepare(chars,cw/ch,s.glyphWeight??400,s.coverageCompensation??65):undefined;
+    for(const c of cells){const a=animate(c,t,cols,rows,s,reduced,chars,motion);if(a.opacity<.01)continue;ctx.globalAlpha=a.opacity;ctx.fillStyle=color(c,gains?.get(a.glyph)??1);drawMark(ctx,c,s,a.glyph,ox+(c.x+.5+a.dx)*cw,oy+(c.y+.5+a.dy)*ch,cw,ch,edges?edgeStrength(edges,cols,rows,c.x,c.y):undefined);}
     ctx.globalAlpha=1;
     this.effects.apply(canvas,ctx,s.effects);
   }
