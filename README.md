@@ -1,6 +1,6 @@
-# ASCII Visual · v1.3.1
+# ASCII Visual · v3.0.0
 
-A standalone, local-first experiment for a professional portfolio Lab. Convert static images, animated GIFs and browser-decodable short videos into animated, colored ASCII-like artwork. Incremental patch from v1.3.0. The only UI change in v1.3.1 is local upload error feedback. The accepted introduction is unchanged. The editor now has a black, tactile, preview-first workspace with a compact settings panel and unified export. No copied reference interfaces or remote runtime services.
+Local-first image, GIF and short-video artwork studio. The v3 rendering upgrade adds 25 styles, 16 mark modes, measured glyph mapping, six dither algorithms, spatial Braille, hybrid layers, true PNG alpha, geometry, lighting, levels and non-destructive framing. The accepted intro and local-only media workflow are preserved. Release candidate verification is tracked in GitHub Actions; see VERIFICATION.md for limitations.
 
 ## Quick start
 
@@ -22,7 +22,7 @@ npm run preview
 
 Deploy `dist/` to a static HTTPS host. Vite uses relative asset paths (`base: './'`) for subdirectory hosting. No backend, API credentials, analytics or upload service. Do not open index.html directly from the file system. The committed lockfile supports reproducible installs with `npm ci`.
 
-**Verification status (v1.3.1):** `npm ci`, TypeScript, all 14 unit tests, and the production Vite build passed. The real Vite/React app passed desktop and mobile Chromium UI smoke tests, including uploads, settings, intro/editor navigation, and PNG/GIF/WebM/MP4 downloads in the tested browser. See [VERIFICATION.md](VERIFICATION.md) for commands, environment, and device limitations.
+**Historical verification (v1.3.1):** `npm ci`, TypeScript, all 14 unit tests, and the production Vite build passed. The real Vite/React app passed desktop and mobile Chromium UI smoke tests, including uploads, settings, intro/editor navigation, and PNG/GIF/WebM/MP4 downloads in the tested browser. See [VERIFICATION.md](VERIFICATION.md) for commands, environment, and device limitations.
 
 ## Introduction and editor lifecycle
 
@@ -179,3 +179,6 @@ Effects → Lighting & finish adds independent glow radius and threshold, RGB sp
 
 ### Creative workspace (Rendering Engine Upgrade stage 7)
 Preview zoom Fit/150/200/300/400% enlarges the preview only, with scrollable overflow. Crop & rotate trims up to 90% per axis before quarter-turn rotation and optional horizontal flip. Framing is non-destructive, source-specific and separate from saved style recipes/history; reset framing restores the full original, successful source replacement resets framing and zoom, and switching styles leaves them intact. The same transformed source is used for sampling, comparison, PNG/HTML, GIF and video exports, with dimensions recalculated from the crop. Transformed frames are bounded to a 3840-pixel long edge for raster memory. Mask feather fades mark opacity near the dark/color threshold; fully excluded pixels stay hidden. Image backdrops remain unmasked, and spatial Braille uses average enabled-dot mask opacity per glyph. No AI segmentation or arbitrary-angle crop. 
+
+### Final quality audit (stage 8)
+Run `python tests/quality_audit.py` against Vite with Playwright Chromium. Six fixed scenes (the procedural bouquet and five synthetic fixtures) generate 30 real artwork variants, a comparison sheet, individual PNGs and timing/pixel statistics in the CI artifact `ascii-visual-browser-screenshots/quality`. Ordered-no-comp disables ink compensation and measured mapping on the **current** engine; it is not a v1 screenshot. Tests check nonempty distinct frames, reproducibility, fresh-render parity, dimensions and masked borders. Timing includes PNG encoding and is descriptive, not a device FPS guarantee. Static-source edge/dither analysis is reused across animated mark frames. Browser smoke now selects Style explicitly before starting motion tests and checks native video crop dimensions when codecs are available. Final subjective review, physical mobile testing and direct comparison against ASCII Magic remain outside the automated guarantee.

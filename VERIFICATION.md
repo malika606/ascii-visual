@@ -1,3 +1,20 @@
+# ASCII Visual v3.0.0 — release candidate verification
+
+## Confirmed evidence before this PR (2026-11-28)
+
+- PR #16: full CI passed (run 46114810907); deployment passed (46114847229).
+- PR #17: 42/42 unit tests passed; browser checks through output levels and PNG parity passed, then the test attempted to click Fine while the Effects tab was active (46114954821).
+- PR #18: 44/44 unit tests passed; browser checks through crop, zoom, PNG/GIF, all 25 styles, dithering, geometry and post-processing passed, then the same tab-navigation test failure occurred (46115156531).
+- This PR corrects the failing tab navigation, extends transformed native-video checks, caches static spatial analysis, and adds a fixed multi-source quality audit. Full CI and visual review are pending. Do not treat earlier successful deployment as verification of the entire v3 suite.
+
+## Acceptance gate
+
+Require successful typecheck, unit tests, production build, Chromium editor and hero tests, screenshot capture, and the six-fixture rendering audit. Inspect `quality/comparison-sheet.png` and `quality/metrics.json` in the GitHub Actions artifact; the numerical checks are not an aesthetic rating. Physical iOS/Android, Safari codec compatibility, sustained high-resolution animation performance and direct ASCII Magic A/B remain unverified. No claim of feature or visual parity with ASCII Magic.
+
+---
+
+## Historical verification record (v1.3.1)
+
 # ASCII Visual v1.3.1 — final technical verification
 
 ## Repository delivery (2026-11-28)

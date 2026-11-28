@@ -20,6 +20,7 @@ export class Renderer {
   private effects=new EffectsRenderer();
   private coverage=new GlyphCoverage();
   private compositor=new Compositor();
+  private detailCache?:{cells:Cell[];settings:Settings;cols:number;rows:number;edges?:Float32Array;dither?:Uint8Array};
   private cached?:{frame:CanvasImageSource;settings:Settings;cols:number;rows:number;cells:Cell[]};
   constructor(canvas:HTMLCanvasElement){this.canvas=canvas;const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas 2D is unavailable.');this.ctx=ctx;}
   draw(frame:CanvasImageSource,w:number,h:number,s:Settings,t:number,reduced=false,side=MAX_RENDER_SIDE,even=false,options:{budget?:number;highResolution?:boolean;staticSource?:boolean;videoResolution?:boolean;opaque?:boolean}={}){
@@ -39,9 +40,15 @@ export class Renderer {
     }
     const chars=Array.from(s.ramp),color=colorMapper(s),motion=isCreativeMotion(s.effect)?creativeFrame(s,t):undefined;
     const glyphMode=!s.mode||s.mode==='glyph',density=s.density??100,emphasis=s.edgeEmphasis??0,markScale=(s.markSize??100)/100;
-    const edges=s.mode==='contours'||emphasis>0?detailMap(cells,cols,rows):undefined;
-    let dither:Uint8Array|undefined;
-    if(s.mode==='dither'){const tones=new Float32Array(cols*rows).fill(-1);for(const c of cells)tones[c.y*cols+c.x]=detailLight(c,density,emphasis,edges,cols,rows);dither=ditherMap(tones,cols,rows,s.ditherAlgorithm??'bayer4',s.ditherThreshold??50);}
+    // Static media with an animated mark layer does not need a new spatial analysis each frame.
+    const prior=this.detailCache;
+    let edges:Float32Array|undefined,dither:Uint8Array|undefined;
+    if(options.staticSource&&prior?.cells===cells&&prior.settings===s&&prior.cols===cols&&prior.rows===rows){edges=prior.edges;dither=prior.dither;}
+    else{
+      edges=s.mode==='contours'||emphasis>0?detailMap(cells,cols,rows):undefined;
+      if(s.mode==='dither'){const tones=new Float32Array(cols*rows).fill(-1);for(const c of cells)tones[c.y*cols+c.x]=detailLight(c,density,emphasis,edges,cols,rows);dither=ditherMap(tones,cols,rows,s.ditherAlgorithm??'bayer4',s.ditherThreshold??50);}
+      this.detailCache=options.staticSource?{cells,settings:s,cols,rows,edges,dither}:undefined;
+    }
     const scale=Math.min(size.width/w,size.height/h),contentW=w*scale,contentH=h*scale;const ox=(size.width-contentW)/2,oy=(size.height-contentH)/2,cw=contentW/cols,ch=contentH/rows;
     const composition=compositeSettings(s);this.compositor.backdrop(ctx,frame,composition,ox,oy,contentW,contentH);
     const markCtx=this.compositor.marksContext(ctx,composition);markCtx.font=markFont(cw,ch,s.glyphWeight??400,markScale);markCtx.textAlign='center';markCtx.textBaseline='middle';
