@@ -42,6 +42,9 @@ jobs:
       - name: Rendering quality audit
         if: always() && steps.vite.outcome == 'success'
         run: ASCII_TEST_URL=http://127.0.0.1:5173 ASCII_SCREENSHOTS=artifacts/screenshots python tests/quality_audit.py
+      - name: Cat preset quality
+        if: always() && steps.vite.outcome == 'success'
+        run: ASCII_TEST_URL=http://127.0.0.1:5173 ASCII_SCREENSHOTS=artifacts/screenshots python tests/cat_quality.py
       - name: Upload actual browser screenshots
         if: always()
         uses: actions/upload-artifact@v4

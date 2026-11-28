@@ -26,7 +26,7 @@ test('high resolution PNG is source-bounded and separate from video cap',()=>{as
 
 import {brailleGlyph,ditherOn,edgeStrength,markColor} from '../src/engine/marks.ts';
 import {presets,styleDescriptions,featuredPresets,featuredCaptions} from '../src/engine/settings.ts';
-test('27 labelled styles use sixteen render modes and preserve the original four',()=>{assert.equal(Object.keys(presets).length,27);assert.equal(new Set(Object.values(presets).map(s=>s.mode??'glyph')).size,16);for(const name of Object.keys(presets))assert.ok(styleDescriptions[name]);assert.equal(presets.Bloom.cell,9);assert.equal(presets.Fine.cell,6);});
+test('30 labelled styles use sixteen render modes and preserve the original four',()=>{assert.equal(Object.keys(presets).length,30);assert.equal(new Set(Object.values(presets).map(s=>s.mode??'glyph')).size,16);for(const name of Object.keys(presets))assert.ok(styleDescriptions[name]);assert.equal(presets.Bloom.cell,9);assert.equal(presets.Fine.cell,6);});
 test('ordered dither coverage, Braille density and contour response',()=>{assert.equal(brailleGlyph(0),'\u2800');assert.equal(brailleGlyph(255),'\u28ff');let n=0;for(let y=0;y<4;y++)for(let x=0;x<4;x++)if(ditherOn(128,x,y))n++;assert.equal(n,8);assert.equal(edgeStrength(new Float32Array(9).fill(100),3,3,1,1).strength,0);assert.ok(edgeStrength(Float32Array.from([0,0,255,0,0,255,0,0,255]),3,3,1,1).strength>.9);});
 test('style palettes and explicit green override',()=>{const c={x:0,y:0,glyph:'@',red:1,green:2,blue:3,light:255};assert.equal(markColor(c,{...defaultSettings,palette:'amber'}),'rgb(255,188,68)');assert.equal(markColor(c,{...defaultSettings,palette:'white',monochrome:true}),'rgb(1,2,3)');});
 
@@ -246,8 +246,17 @@ test('soft masks keep excluded pixels hidden and fade only near the threshold',(
  const cells=pixelsToCells(data,4,1,s);assert.equal(cells.length,2);assert.ok(cells[0].maskOpacity>0&&cells[0].maskOpacity<1);assert.equal(cells[1].maskOpacity,undefined);
 });
 
-test('featured presets are nine diverse valid looks and Hybrid is ready to composite',()=>{
- assert.equal(featuredPresets.length,9);assert.equal(new Set(featuredPresets).size,9);
+test('featured presets are eight diverse valid looks and Hybrid is ready to composite',()=>{
+ assert.equal(featuredPresets.length,8);assert.equal(new Set(featuredPresets).size,8);
  for(const style of featuredPresets){assert.ok(featuredCaptions[style]);assert.ok(validLook({style,settings:presets[style]}));}
  assert.equal(presets.Hybrid.backdrop,'blurred');assert.equal(presets.Hybrid.markBlend,'screen');assert.equal(presets.Hybrid.effect,'none');
+});
+
+test('brighter mono presets lift dark source tones without reviving pure black',()=>{
+ const data=Uint8ClampedArray.from([0,0,0,255,10,10,10,255,30,30,30,255,90,90,90,255,210,210,210,255]);
+ const old=pixelsToCells(data,5,1,presets.Noir),bright=pixelsToCells(data,5,1,presets['Bright Mono']);
+ assert.equal(bright.length,4);assert.ok(bright.every(c=>c.red===c.green&&c.green===c.blue));
+ assert.ok(bright[0].light>old[0].light*2);assert.ok(bright[1].light>old[1].light*1.5);
+ assert.ok(bright[0].light<bright[1].light&&bright[1].light<bright[2].light&&bright[2].light<bright[3].light);
+ assert.ok(!featuredPresets.includes('Noir')&&!featuredPresets.includes('Dither')&&!featuredPresets.includes('Braille'));
 });

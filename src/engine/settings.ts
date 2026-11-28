@@ -43,19 +43,22 @@ Object.assign(presets,{
   Voxel:look({mode:'voxel',cell:14,shapeRelief:75}),
   Disco:look({mode:'disco',cell:12,shapeRelief:80}),
   Noir:look({cell:4,contrast:1.15,saturation:0,threshold:1,gamma:1.35,glyphWeight:500,palette:'white',ramp:' .,:;irsXA253hMHGS#9B&@',backdrop:'black'}),
-  Hybrid:look({cell:6,contrast:1.05,saturation:1.2,threshold:5,coverageCompensation:80,backdrop:'blurred',backdropColor:'#000000',backdropOpacity:45,backdropBlur:25,markOpacity:100,markBlend:'screen'})
+  'Clean ASCII':look({cell:7,contrast:1,saturation:0,threshold:1,gamma:1.5,shadows:15,glyphWeight:500,palette:'white',ramp:' .:-=+*oO#@',markSize:105,backdrop:'black'}),
+  'Bright Mono':look({cell:6,contrast:.9,saturation:0,threshold:0,gamma:2.1,shadows:30,glyphWeight:700,palette:'white',ramp:' .:-=+*oO#@',markSize:110,density:105,postGamma:1.15,backdrop:'black'}),
+  'Soft Mono':look({cell:7,contrast:.95,saturation:0,threshold:0,gamma:2,shadows:30,brightness:110,glyphWeight:500,palette:'source',ramp:' .,:;irsXA253hMHGS#9B&@',markSize:115,coverageCompensation:100,postGamma:1.25,backdrop:'black'}),
+  Hybrid:look({cell:7,contrast:.95,saturation:1.1,threshold:1,gamma:1.55,shadows:22,coverageCompensation:90,backdrop:'blurred',backdropColor:'#000000',backdropOpacity:60,backdropBlur:12,markOpacity:100,markBlend:'screen'})
 });
 export const styleDescriptions:Record<string,string>={
  Bloom:'Colorful animated characters',Terminal:'Green phosphor text',Mosaic:'Bold moving symbols',Fine:'Detailed character art',
  Microtype:'Extra-small characters',Matrix:'Green binary code',Dither:'Ordered or error-diffused raster screen',Halftone:'Colored variable-size dots',
  Pixel:'Color mosaic tiles',Braille:'Eight independently sampled Unicode dots',Contours:'Local brightness edges',Stipple:'Scattered ink dots',
  Typography:'Letter-based texture',LED:'Round colored display cells',Engraving:'Layered diagonal strokes',Particles:'Drifting specks',
- Newspaper:'High-contrast cream halftone',Amber:'Warm monochrome terminal',Cross:'Density-scaled plus shapes',Diamond:'Faceted diamond halftone',Lines:'Adjustable line screen',Diagonal:'Slanted line screen','Stud mosaic':'Raised round studs on colored tiles',Voxel:'Isometric shaded blocks',Disco:'Seeded reflective tile mosaic',Hybrid:'Detailed characters over a soft original-image layer',Noir:'White characters on black, with fine grayscale detail'
+ Newspaper:'High-contrast cream halftone',Amber:'Warm monochrome terminal',Cross:'Density-scaled plus shapes',Diamond:'Faceted diamond halftone',Lines:'Adjustable line screen',Diagonal:'Slanted line screen','Stud mosaic':'Raised round studs on colored tiles',Voxel:'Isometric shaded blocks',Disco:'Seeded reflective tile mosaic',Hybrid:'Detailed characters over a soft original-image layer',Noir:'White characters on black, with fine grayscale detail','Clean ASCII':'Classic white text with balanced midtones','Bright Mono':'Bold white characters with lifted shadow detail','Soft Mono':'Soft grayscale character art with smooth tonal transitions'
 };
 
 // Editorial starter collection: diverse, recognizable treatments, not usage rankings.
-export const featuredPresets=['Noir','Fine','Hybrid','Bloom','Terminal','Halftone','Pixel','Dither','Braille'] as const;
-export const featuredCaptions:Record<string,string>={Noir:'Black & white',Fine:'Classic ASCII',Hybrid:'Rich color & depth',Bloom:'Animated reveal',Terminal:'Retro green',Halftone:'Print-style dots',Pixel:'Pixel art',Dither:'Retro monochrome',Braille:'Fine dot texture'};
+export const featuredPresets=['Bright Mono','Clean ASCII','Soft Mono','Hybrid','Terminal','Halftone','Mosaic','Pixel'] as const;
+export const featuredCaptions:Record<string,string>={'Bright Mono':'Recommended · lifted shadows','Clean ASCII':'Classic white text','Soft Mono':'Smooth grayscale',Hybrid:'Rich color & depth',Terminal:'Retro green',Halftone:'Print-style dots',Mosaic:'Bold characters',Pixel:'Pixel art'};
 
-export const demoStyle='Noir';
+export const demoStyle='Bright Mono';
 export const demoSettings={...presets[demoStyle]};

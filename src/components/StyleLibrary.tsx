@@ -15,13 +15,13 @@ export function StyleLibrary({style,onSelect,advanced}:{style:string;onSelect:(n
       try{
         bitmap=await createImageBitmap(await demoFile());
         if(cancelled)return;
-        const source=document.createElement('canvas');source.width=240;source.height=Math.round(240*bitmap.height/bitmap.width);
+        const source=document.createElement('canvas');source.width=bitmap.width;source.height=bitmap.height;
         source.getContext('2d')!.drawImage(bitmap,0,0,source.width,source.height);
         const canvas=document.createElement('canvas'),renderer=new Renderer(canvas);
         for(const name of names){
           if(cancelled)return;
           const preset=presets[name];
-          renderer.draw(source,source.width,source.height,{...preset,cell:Math.max(2,Math.round(preset.cell*.45))},3,true,160,false,{budget:6500,staticSource:true});
+          renderer.draw(source,source.width,source.height,preset,3,true,360,false,{budget:24000,staticSource:true});
           const url=canvas.toDataURL('image/png');
           setThumbs(prev=>({...prev,[name]:url}));
           await new Promise<void>(resolve=>setTimeout(resolve,0));
@@ -31,7 +31,8 @@ export function StyleLibrary({style,onSelect,advanced}:{style:string;onSelect:(n
     }
     void generate();return()=>{cancelled=true;};
   },[]);
-  const visible=advanced&&expanded?names:[...initial,...(!initial.includes(style)?[style]:[])];
+  const essentials=advanced?[...initial,'Fine','Bloom']:initial;
+  const visible=advanced&&expanded?names:[...essentials,...(!essentials.includes(style)?[style]:[])];
   return <div className={'style-library'+(!advanced?' featured-library':'')}>
     {!advanced&&<p className="preset-intro">Choose a look. Every preset is ready to use.</p>}
     <div className="presets style-grid" role="group" aria-label="Style">
@@ -41,6 +42,6 @@ export function StyleLibrary({style,onSelect,advanced}:{style:string;onSelect:(n
       </button>)}
     </div>
     {advanced&&<button type="button" className="style-expand" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?'Show essentials':`Browse all ${names.length} styles`}</button>}
-    <p className="hint style-description">{styleDescriptions[style]}</p>{!advanced&&<p className="hint preset-preview-note">Thumbnails show the demo image. Your artwork updates in the main preview.</p>}
+    <p className="hint style-description">{styleDescriptions[style]}</p>{!advanced&&<p className="hint preset-preview-note">Thumbnails show a still frame of the demo with each preset's actual settings.</p>}
   </div>;
 }
