@@ -11,12 +11,12 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     gallery=page.locator('.style-grid')
     expect(gallery.get_by_role('button')).to_have_count(8)
     expect(gallery.locator('img')).to_have_count(8,timeout=15000)
-    assert gallery.get_by_role('button').all_text_contents()==['FineClassic ASCII','HybridRich color & depth','BloomAnimated reveal','TerminalRetro green','HalftonePrint-style dots','PixelPixel art','DitherRetro monochrome','BrailleFine dot texture']
+    assert gallery.get_by_role('button').evaluate_all('(els)=>els.map(el=>el.getAttribute("aria-label"))')==['Fine','Hybrid','Bloom','Terminal','Halftone','Pixel','Dither','Braille']
     expect(page.get_by_role('tablist',name='Studio settings')).to_have_count(0)
     expect(page.get_by_role('slider',name='Detail',exact=True)).to_have_count(0)
-    gallery.get_by_role('button',name='Fine Classic ASCII',exact=True).click()
+    gallery.get_by_role('button',name='Fine',exact=True).click()
     fine=page.locator('canvas').evaluate('(c)=>c.toDataURL()')
-    gallery.get_by_role('button',name='Hybrid Rich color & depth',exact=True).click()
+    gallery.get_by_role('button',name='Hybrid',exact=True).click()
     hybrid=page.locator('canvas').evaluate('(c)=>c.toDataURL()');assert hybrid!=fine
     page.get_by_role('button',name='Advanced editor →',exact=True).click()
     expect(page.get_by_role('tablist',name='Studio settings')).to_be_visible()
