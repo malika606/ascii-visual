@@ -1,6 +1,7 @@
 import {Renderer} from '../engine/renderer.ts';
 import type {Settings} from '../engine/settings.ts';
 import {isCreativeMotion,motionPeriod} from '../engine/creativeMotion.ts';
+import {initialTransform,transformedSource,type SourceTransform} from '../media/transform.ts';
 import {loadSource} from '../media/source.ts';
 import {videoBitrate,type VideoFps,type VideoQuality} from '../engine/quality.ts';
 export interface RecordingFormat {mime:string;extension:'webm'|'mp4'}
@@ -10,14 +11,15 @@ export function supportedFormat(){return supportedFormats()[0]??null;}
 export function extensionForMime(mime:string){if(/^video\/webm(?:;|$)/i.test(mime))return 'webm';if(/^video\/mp4(?:;|$)/i.test(mime))return 'mp4';throw Error('Recorder returned an unknown video format.');}
 export async function verifyContainer(blob:Blob,extension:string){const b=new Uint8Array(await blob.slice(0,16).arrayBuffer());const valid=extension==='webm'?b[0]===0x1a&&b[1]===0x45&&b[2]===0xdf&&b[3]===0xa3:extension==='mp4'&&String.fromCharCode(...b.slice(4,8))==='ftyp';if(!valid)throw Error('Recorder returned bytes inconsistent with the requested container.');}
 export function exportDuration(sourceDuration:number,kind:string,settings?:Settings){return kind==='image'?(settings&&isCreativeMotion(settings.effect)?motionPeriod(settings):5):Math.min(15,Math.max(2,sourceDuration));}
-export async function record(file:File,settings:Settings,signal:AbortSignal,onProgress:(p:number)=>void,options:{format?:RecordingFormat;side?:number;fps?:VideoFps;quality?:VideoQuality}={}):Promise<{blob:Blob;extension:string}>{
+export async function record(file:File,settings:Settings,signal:AbortSignal,onProgress:(p:number)=>void,options:{format?:RecordingFormat;side?:number;fps?:VideoFps;quality?:VideoQuality;transform?:SourceTransform}={}):Promise<{blob:Blob;extension:string}>{
   const requested=options.format??supportedFormat();
   const format=requested?.extension==='mp4'&&(options.side??960)>960&&MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')?{mime:'video/mp4;codecs=avc1',extension:'mp4' as const}:requested;
   const fps=options.fps===12||options.fps===30?options.fps:24;
   if(!format)throw Error('Video recording is not supported by this browser.');
   if(document.hidden)throw Error('Keep the tab visible during recording.');
-  const source=await loadSource(file,signal);let stream:MediaStream|undefined,recorder:MediaRecorder|undefined,raf=0;
+  const raw=await loadSource(file,signal);let source=raw;let stream:MediaStream|undefined,recorder:MediaRecorder|undefined,raf=0;
   try{
+    source=transformedSource(raw,options.transform??initialTransform);
     const canvas=document.createElement('canvas'),renderer=new Renderer(canvas);const duration=exportDuration(source.duration,source.kind,settings);renderer.draw(source.frame(0),source.width,source.height,settings,0,false,options.side,format.extension==='mp4',{staticSource:source.kind==='image',videoResolution:true});
     stream=canvas.captureStream(fps);recorder=new MediaRecorder(stream,{mimeType:format.mime,videoBitsPerSecond:videoBitrate(canvas.width,canvas.height,fps,options.quality??'balanced')});const mr=recorder;const chunks:Blob[]=[];
     return await new Promise<{blob:Blob;extension:string}>((resolve,reject)=>{

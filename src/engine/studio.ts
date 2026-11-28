@@ -33,7 +33,7 @@ export function validRamp(value:unknown):value is string{
   return typeof value==='string'&&Array.from(value).length>=1&&Array.from(value).length<=64&&value.trim().length>0&&!/[\p{C}\p{Zl}\p{Zp}]/u.test(value);
 }
 const ranges={cell:[2,32],contrast:[.5,2],saturation:[0,2],threshold:[0,100],tolerance:[0,100],speed:[.25,2]} as const;
-const optionalRanges={motionIntensity:[0,100],motionDuration:[1,5],brightness:[50,250],gamma:[.5,2.5],shadows:[0,60],highlights:[-50,50],colorBoost:[50,200],glyphWeight:[400,700],coverageCompensation:[0,100],backdropOpacity:[0,100],backdropBlur:[0,100],markOpacity:[0,100],density:[50,160],markSize:[50,130],edgeEmphasis:[0,100],ditherThreshold:[10,90],brailleThreshold:[10,90],shapeAngle:[0,180],shapeRelief:[0,100],glowRadius:[0,100],glowThreshold:[0,100],rgbAngle:[0,180],scanSpacing:[2,16],vignetteRadius:[0,100],postBlack:[0,254],postWhite:[1,255],postGamma:[.5,2.5],sharpen:[0,100],lightAmount:[0,100],lightX:[0,100],lightY:[0,100],lightRadius:[10,100]} as const;
+const optionalRanges={motionIntensity:[0,100],motionDuration:[1,5],brightness:[50,250],gamma:[.5,2.5],shadows:[0,60],highlights:[-50,50],colorBoost:[50,200],glyphWeight:[400,700],coverageCompensation:[0,100],backdropOpacity:[0,100],backdropBlur:[0,100],markOpacity:[0,100],density:[50,160],markSize:[50,130],edgeEmphasis:[0,100],ditherThreshold:[10,90],brailleThreshold:[10,90],shapeAngle:[0,180],shapeRelief:[0,100],glowRadius:[0,100],glowThreshold:[0,100],rgbAngle:[0,180],scanSpacing:[2,16],vignetteRadius:[0,100],postBlack:[0,254],postWhite:[1,255],postGamma:[.5,2.5],sharpen:[0,100],lightAmount:[0,100],lightX:[0,100],lightY:[0,100],lightRadius:[10,100],maskFeather:[0,50]} as const;
 const allowedEnums={ditherAlgorithm:['bayer4','bayer8','floyd-steinberg','atkinson','noise','threshold'],brailleSampling:['spatial','density'],glyphMapping:['measured','ordered'],backdrop:['black','solid','source','blurred','transparent'],markBlend:['source-over','screen','multiply','overlay','soft-light','difference','lighten'],background:['dark','light','color'],effect:['none','reveal','wave','glimmer',...Object.keys(creativeMotionLabels)],mode:['glyph','dots','pixel','dither','braille','contours','stipple','led','hatch','particles','cross','diamond','lines','stud','voxel','disco'],palette:['source','white','amber','paper','rose','ocean','sunset','ice','custom'],motionDirection:['up','down','left','right','outward','inward']} as const;
 const inRange=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
 const hex=(v:unknown)=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v);
@@ -91,6 +91,6 @@ export function surpriseLook(current:Look,random=Math.random):Look{
   const idea=candidates[n]??candidates[0];
   // Curated combinations, not random extreme values; preserve the source mask.
   const s=current.settings;
-  return {style:idea.style,settings:{...presets[idea.style],background:s.background,keyColor:s.keyColor,tolerance:s.tolerance,threshold:s.threshold,
+  return {style:idea.style,settings:{...presets[idea.style],background:s.background,keyColor:s.keyColor,tolerance:s.tolerance,threshold:s.threshold,maskFeather:s.maskFeather,
     palette:idea.palette,monochrome:false,effect:'none',effects:{glow:idea.glow,grain:idea.grain,scanlines:idea.scanlines,rgbSplit:idea.split,distortion:0,vignette:10}}};
 }

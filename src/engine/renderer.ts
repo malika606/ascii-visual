@@ -53,7 +53,7 @@ export class Renderer {
       const glyph=calibrated?measured.lookup[Math.round(light)]:(chars[Math.round(light/255*(chars.length-1))]??' ');
       const mark=dither?{...c,light,glyph,ditherBit:dither[c.y*cols+c.x]}:light===c.light&&glyph===c.glyph?c:{...c,light,glyph};
       const a=animate(mark,t,cols,rows,s,reduced,motionChars,motion);if(a.opacity<.01)continue;
-      markCtx.globalAlpha=a.opacity;markCtx.fillStyle=color(c,measured?.gains.get(a.glyph)??1);
+      markCtx.globalAlpha=a.opacity*(c.maskOpacity??1);markCtx.fillStyle=color(c,measured?.gains.get(a.glyph)??1);
       const edge=s.mode==='contours'&&edges?edgeStrength(edges,cols,rows,c.x,c.y):undefined;
       drawMark(markCtx,mark,s,a.glyph,ox+(c.x+.5+a.dx)*cw,oy+(c.y+.5+a.dy)*ch,cw*markScale,ch*markScale,edge);
     }
