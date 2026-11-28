@@ -10,8 +10,14 @@ with sync_playwright() as p:
     errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     open_ui(page);page.get_by_role('button',name='MAKE IT ASCII').click()
     expect(page.locator('.status')).to_have_text('Source ready.')
-    expect(page.locator('.style-grid img')).to_have_count(4,timeout=15000)
+    expect(page.locator('.style-grid img')).to_have_count(8,timeout=15000)
     page.screenshot(path=str(folder/'studio-desktop.png'),full_page=True)
+    for w,h in [(390,844),(320,568)]:
+        page.set_viewport_size({'width':w,'height':h});assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.screenshot(path=str(folder/f'presets-mobile-{w}.png'),full_page=True)
+    page.set_viewport_size({'width':1440,'height':900})
+    page.get_by_role('button',name='Advanced editor →',exact=True).click()
+    page.screenshot(path=str(folder/'studio-advanced-desktop.png'),full_page=True)
     # Same source, same settings, only measured ink compensation changes.
     def capture(name):
         data=base64.b64decode(page.get_by_label('Rendered ASCII artwork',exact=True).evaluate("(c)=>c.toDataURL('image/png')").split(',',1)[1])
@@ -49,8 +55,8 @@ with sync_playwright() as p:
     expect(page.get_by_text('ASCII Visual — original bouquet.png',exact=True)).to_be_visible()
     page.get_by_role('tab',name='Style',exact=True).click()
     print('PASS paired artwork captures and dark-patch brightness with black preservation',flush=True)
-    page.get_by_role('button',name='Browse all 25 styles').click()
-    expect(page.locator('.style-grid img')).to_have_count(25,timeout=15000)
+    page.get_by_role('button',name='Browse all 26 styles').click()
+    expect(page.locator('.style-grid img')).to_have_count(26,timeout=15000)
     page.screenshot(path=str(folder/'studio-gallery.png'),full_page=True)
     for name in ('Cross','Diamond','Lines','Diagonal','Stud mosaic','Voxel','Disco'):
         page.get_by_role('button',name=name,exact=True).click()

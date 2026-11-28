@@ -25,8 +25,8 @@ test('2 px grid adds detail without exceeding budgets, even at extreme aspect ra
 test('high resolution PNG is source-bounded and separate from video cap',()=>{assert.deepEqual(pngOutputSize(7680,4320,3840),{width:3840,height:2160});assert.deepEqual(pngOutputSize(640,480,3840),{width:640,height:480});assert.deepEqual(pngResolutionChoices(1920,1080)[0],{side:1920,width:1920,height:1080});assert.deepEqual(outputSize(7680,4320,3840),{width:960,height:540});});
 
 import {brailleGlyph,ditherOn,edgeStrength,markColor} from '../src/engine/marks.ts';
-import {presets,styleDescriptions} from '../src/engine/settings.ts';
-test('25 labelled styles use sixteen render modes and preserve the original four',()=>{assert.equal(Object.keys(presets).length,25);assert.equal(new Set(Object.values(presets).map(s=>s.mode??'glyph')).size,16);for(const name of Object.keys(presets))assert.ok(styleDescriptions[name]);assert.equal(presets.Bloom.cell,9);assert.equal(presets.Fine.cell,6);});
+import {presets,styleDescriptions,featuredPresets,featuredCaptions} from '../src/engine/settings.ts';
+test('26 labelled styles use sixteen render modes and preserve the original four',()=>{assert.equal(Object.keys(presets).length,26);assert.equal(new Set(Object.values(presets).map(s=>s.mode??'glyph')).size,16);for(const name of Object.keys(presets))assert.ok(styleDescriptions[name]);assert.equal(presets.Bloom.cell,9);assert.equal(presets.Fine.cell,6);});
 test('ordered dither coverage, Braille density and contour response',()=>{assert.equal(brailleGlyph(0),'\u2800');assert.equal(brailleGlyph(255),'\u28ff');let n=0;for(let y=0;y<4;y++)for(let x=0;x<4;x++)if(ditherOn(128,x,y))n++;assert.equal(n,8);assert.equal(edgeStrength(new Float32Array(9).fill(100),3,3,1,1).strength,0);assert.ok(edgeStrength(Float32Array.from([0,0,255,0,0,255,0,0,255]),3,3,1,1).strength>.9);});
 test('style palettes and explicit green override',()=>{const c={x:0,y:0,glyph:'@',red:1,green:2,blue:3,light:255};assert.equal(markColor(c,{...defaultSettings,palette:'amber'}),'rgb(255,188,68)');assert.equal(markColor(c,{...defaultSettings,palette:'white',monochrome:true}),'rgb(1,2,3)');});
 
@@ -244,4 +244,10 @@ test('soft masks keep excluded pixels hidden and fade only near the threshold',(
  const s={...defaultSettings,threshold:20,maskFeather:20,contrast:1},mask=maskCoverageMapper(s),data=Uint8ClampedArray.from([10,10,10,255,40,40,40,255,120,120,120,255,255,255,255,0]);
  assert.equal(mask(data,0),0);assert.ok(mask(data,4)>0&&mask(data,4)<1);assert.equal(mask(data,8),1);assert.equal(mask(data,12),0);
  const cells=pixelsToCells(data,4,1,s);assert.equal(cells.length,2);assert.ok(cells[0].maskOpacity>0&&cells[0].maskOpacity<1);assert.equal(cells[1].maskOpacity,undefined);
+});
+
+test('featured presets are eight diverse valid looks and Hybrid is ready to composite',()=>{
+ assert.equal(featuredPresets.length,8);assert.equal(new Set(featuredPresets).size,8);
+ for(const style of featuredPresets){assert.ok(featuredCaptions[style]);assert.ok(validLook({style,settings:presets[style]}));}
+ assert.equal(presets.Hybrid.backdrop,'blurred');assert.equal(presets.Hybrid.markBlend,'screen');assert.equal(presets.Hybrid.effect,'none');
 });
