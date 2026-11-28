@@ -73,8 +73,8 @@ with sync_playwright() as p:
           const {Renderer}=await import('/src/engine/renderer.ts');
           const {presets}=await import('/src/engine/settings.ts');
           const {hybridSettings}=await import('/src/engine/composite.ts');
-          const {demoFile}=await import('/src/media/demo.ts');
-          const bitmap=await createImageBitmap(uri?await (await fetch(uri)).blob():await demoFile());
+          const {bouquetFixture}=await import('/src/media/bouquetFixture.ts');
+          const bitmap=await createImageBitmap(uri?await (await fetch(uri)).blob():await bouquetFixture());
           const source=document.createElement('canvas'),scale=Math.min(1,640/Math.max(bitmap.width,bitmap.height));
           source.width=Math.round(bitmap.width*scale);source.height=Math.round(bitmap.height*scale);
           source.getContext('2d').drawImage(bitmap,0,0,source.width,source.height);bitmap.close();

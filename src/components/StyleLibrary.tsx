@@ -36,7 +36,7 @@ export function StyleLibrary({style,onSelect,advanced}:{style:string;onSelect:(n
     {!advanced&&<p className="preset-intro">Choose a look. Every preset is ready to use.</p>}
     <div className="presets style-grid" role="group" aria-label="Style">
       {visible.map(name=><button type="button" className="style-card" key={name} aria-pressed={style===name} aria-label={name} title={styleDescriptions[name]} onClick={()=>onSelect(name)}>
-        {thumbs[name]?<img src={thumbs[name]} alt="" width={160} height={137}/>:<span className="style-placeholder" aria-hidden="true">.:*#@</span>}
+        {thumbs[name]?<img src={thumbs[name]} alt="" width={160} height={160}/>:<span className="style-placeholder" aria-hidden="true">.:*#@</span>}
         <span>{name}</span>{!advanced&&featuredCaptions[name]&&<span className="preset-caption">{featuredCaptions[name]}</span>}
       </button>)}
     </div>
