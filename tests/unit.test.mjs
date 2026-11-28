@@ -157,3 +157,22 @@ test('compositing defaults are pure ASCII, hybrid is opt-in and transparent uses
  assert.ok(validLook({style:'Fine',settings:{...presets.Fine,...hybridSettings}}));
  assert.ok(!validLook({style:'Fine',settings:{...presets.Fine,markOpacity:101}}));
 });
+
+import {measuredRamp,measuredGlyphs} from '../src/engine/coverage.ts';
+import {densityTone,detailMap,detailLight} from '../src/engine/detail.ts';
+test('measured glyph selection follows actual ink area, not character order',()=>{
+ const samples=[{glyph:'@',area:.4},{glyph:'.',area:.02},{glyph:'+',area:.18},{glyph:'#',area:.28}];
+ const sorted=measuredRamp(samples);assert.deepEqual(sorted.map(x=>x.glyph),['.','+','#','@']);
+ const lut=measuredGlyphs(samples);assert.equal(lut[0],'.');assert.equal(lut[255],'@');
+ const areas=new Map(samples.map(x=>[x.glyph,x.area]));for(let i=1;i<256;i++)assert.ok(areas.get(lut[i])>=areas.get(lut[i-1]));
+ assert.ok(measuredGlyphs([{glyph:'@',area:.4}]).every(x=>x==='@'));
+});
+test('density and edge emphasis preserve endpoints, alter midtones and do not create masked cells',()=>{
+ assert.equal(densityTone(0,160),0);assert.equal(densityTone(255,50),255);assert.equal(densityTone(100),100);
+ assert.ok(densityTone(100,160)>100&&densityTone(100,50)<100);
+ const c={x:1,y:0,light:100,glyph:'+',red:100,green:100,blue:100};
+ const map=detailMap([c,{...c,x:2,light:255}],3,1);
+ assert.equal(map[0],0);assert.ok(detailLight(c,100,100,map,3,1)>100);
+ assert.ok(validLook({style:'Fine',settings:{...presets.Fine,glyphMapping:'ordered',density:150,markSize:120,edgeEmphasis:80}}));
+ assert.ok(!validLook({style:'Fine',settings:{...presets.Fine,markSize:200}}));
+});
