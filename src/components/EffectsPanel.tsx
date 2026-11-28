@@ -26,8 +26,8 @@ export function EffectsPanel({settings,onChange,section}:{settings:Settings;onCh
     </div>}
     </>}
     {section==='effects'&&<details className="advanced effects-details" open={true}><summary>Visual effects <span className="effect-count">{active?active+' active':'Off'}</span></summary>
-      <p className="hint">Combine effects; they are baked into the downloaded artwork.</p>
-      {effectNames.map(key=><label className="range" key={key} title={descriptions[key]}><span>{labels[key]}<output>{values[key]}%</output></span><input type="range" aria-label={labels[key]} min={0} max={100} step={1} value={values[key]} onChange={e=>change(key,Number(e.target.value))}/></label>)}
+      <p className="hint">{settings.backdrop==='transparent'?'Effects are paused while the backdrop is transparent. Choose an opaque backdrop to use them.':'Combine effects; they are baked into the downloaded artwork.'}</p>
+      {effectNames.map(key=><label className="range" key={key} title={descriptions[key]}><span>{labels[key]}<output>{values[key]}%</output></span><input type="range" aria-label={labels[key]} disabled={settings.backdrop==='transparent'} min={0} max={100} step={1} value={values[key]} onChange={e=>change(key,Number(e.target.value))}/></label>)}
       <button type="button" className="effect-reset" disabled={!active} onClick={()=>onChange({...settings,effects:{...noEffects}})}>Reset effects</button>
       <p className="hint">Effects are static and do not add flashing. High settings can soften fine detail.</p>
     </details>}

@@ -1,12 +1,14 @@
 export type CreativeMotion = 'assemble' | 'disintegrate' | 'breathing' | 'rain' | 'scan' | 'spiral' | 'flow' | 'glitch' | 'dissolve' | 'shimmer';
 export type Effect = 'reveal' | 'wave' | 'glimmer' | 'none' | CreativeMotion;
 export type MotionDirection = 'up' | 'down' | 'left' | 'right' | 'outward' | 'inward';
+export type BackdropMode = 'black' | 'solid' | 'source' | 'blurred' | 'transparent';
+export type MarkBlend = 'source-over' | 'screen' | 'multiply' | 'overlay' | 'soft-light' | 'difference' | 'lighten';
 export type BackgroundMode = 'dark' | 'light' | 'color';
 export type RenderMode = 'glyph' | 'dots' | 'pixel' | 'dither' | 'braille' | 'contours' | 'stipple' | 'led' | 'hatch' | 'particles';
 export type StylePalette = 'source' | 'white' | 'amber' | 'paper' | 'rose' | 'ocean' | 'sunset' | 'ice' | 'custom';
 export type VisualEffects = {glow:number;rgbSplit:number;scanlines:number;grain:number;distortion:number;vignette:number};
 export const noEffects:VisualEffects={glow:0,rgbSplit:0,scanlines:0,grain:0,distortion:0,vignette:0};
-export interface Settings { coverageCompensation?:number; brightness?:number; gamma?:number; shadows?:number; highlights?:number; colorBoost?:number; glyphWeight?:number; invert?:boolean; motionIntensity?:number; motionDuration?:number; motionLoop?:boolean; motionDirection?:MotionDirection; mode?: RenderMode; palette?: StylePalette; gradientLow?:string; gradientHigh?:string; effects?:VisualEffects; background: BackgroundMode; keyColor: string; tolerance: number; cell: number; contrast: number; saturation: number; threshold: number; speed: number; effect: Effect; ramp: string; monochrome: boolean }
+export interface Settings { backdrop?:BackdropMode; backdropColor?:string; backdropOpacity?:number; backdropBlur?:number; markOpacity?:number; markBlend?:MarkBlend; coverageCompensation?:number; brightness?:number; gamma?:number; shadows?:number; highlights?:number; colorBoost?:number; glyphWeight?:number; invert?:boolean; motionIntensity?:number; motionDuration?:number; motionLoop?:boolean; motionDirection?:MotionDirection; mode?: RenderMode; palette?: StylePalette; gradientLow?:string; gradientHigh?:string; effects?:VisualEffects; background: BackgroundMode; keyColor: string; tolerance: number; cell: number; contrast: number; saturation: number; threshold: number; speed: number; effect: Effect; ramp: string; monochrome: boolean }
 export const presets: Record<string, Settings> = {
   Bloom: {background:'dark',keyColor:'#ffffff',tolerance:30,cell:9,contrast:1.25,saturation:1.5,threshold:16,speed:1,effect:'reveal',ramp:'.:-=+*oO#@',monochrome:false},
   Terminal: {background:'dark',keyColor:'#ffffff',tolerance:30,cell:10,contrast:1.4,saturation:1,threshold:22,speed:0.8,effect:'glimmer',ramp:'.:;il1tfLCG08@',monochrome:true},

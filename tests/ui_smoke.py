@@ -81,6 +81,35 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
         with page.expect_download(timeout=30000) as d:page.get_by_role('button',name='Download',exact=True).click()
         output=pathlib.Path(tmp)/d.value.suggested_filename;d.value.save_as(output);return output
     assert Image.open(download('png')).size==(720,617)
+    # Backdrop and mark layer controls affect actual pixels, not CSS.
+    page.get_by_role('button',name='Fine',exact=True).click();tab('Color')
+    art=page.get_by_label('Rendered ASCII artwork',exact=True)
+    frame=lambda:art.evaluate('(c)=>c.toDataURL()')
+    pure=frame()
+    page.get_by_role('button',name='Hybrid look',exact=True).click()
+    hybrid=frame();assert hybrid!=pure
+    page.get_by_role('slider',name='Mark opacity',exact=True).fill('0')
+    source_only=frame();assert source_only!=hybrid
+    page.get_by_role('slider',name='Mark opacity',exact=True).fill('100')
+    assert frame()==hybrid
+    page.get_by_role('combobox',name='Blend mode',exact=True).select_option('multiply')
+    assert frame()!=hybrid
+    page.get_by_role('combobox',name='Backdrop',exact=True).select_option('solid')
+    page.get_by_label('Backdrop color',exact=True).fill('#123456')
+    page.get_by_role('slider',name='Mark opacity',exact=True).fill('0')
+    with Image.open(download('png')) as out:assert out.convert('RGB').getpixel((0,0))==(18,52,86)
+    page.get_by_role('combobox',name='Backdrop',exact=True).select_option('transparent')
+    page.get_by_role('slider',name='Mark opacity',exact=True).fill('100')
+    with Image.open(download('png')) as out:
+        alpha=out.convert('RGBA').getchannel('A')
+        assert alpha.getextrema()[0]==0 and alpha.getextrema()[1]>0
+    page.get_by_role('slider',name='Mark opacity',exact=True).fill('0')
+    with Image.open(download('gif')) as out:assert out.convert('RGB').getextrema()==((0,0),(0,0),(0,0))
+    page.get_by_role('combobox',name='Format',exact=True).select_option('png')
+    page.get_by_label('Export resolution').select_option('720')
+    page.get_by_role('button',name='Reset layers',exact=True).click()
+    tab('Style');page.get_by_role('button',name='Bloom',exact=True).click()
+    print('PASS hybrid composition, mark opacity, blending, solid color, true PNG alpha and GIF black flattening',flush=True)
     page.get_by_role('button',name='Fine',exact=True).click()
     page.get_by_role('button',name='Compare',exact=True).click()
     art=page.get_by_label('Rendered ASCII artwork',exact=True)
