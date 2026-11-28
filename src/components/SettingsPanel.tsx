@@ -19,6 +19,7 @@ interface Props{
   onAuto:()=>void;canUndo:boolean;canRedo:boolean;onUndo:()=>void;onRedo:()=>void;onGestureStart:()=>void;
 }
 export function SettingsPanel({settings,onChange,disabled,style,reduced,onReduced,canUndo,canRedo,onUndo,onRedo,onGestureStart,onAuto}:Props){
+  const [advanced,setAdvanced]=useState(false);
   const [tab,setTab]=useState<Tab>('Style'),[draft,setDraft]=useState(settings.ramp);
   const buttons=useRef<(HTMLButtonElement|null)[]>([]);
   useEffect(()=>setDraft(settings.ramp),[settings.ramp]);
@@ -38,15 +39,17 @@ export function SettingsPanel({settings,onChange,disabled,style,reduced,onReduce
   }
   const beginGesture=(e:PointerEvent<HTMLElement>)=>{if(e.target instanceof HTMLInputElement&&e.target.type==='range')onGestureStart();};
   return <fieldset disabled={disabled} className="settings" onPointerDownCapture={beginGesture}>
-    <legend>Look <span className="selected-style">{style}{!sameSettings(settings,presets[style])?' · adjusted':''}</span></legend>
-    <div className="history-actions"><button type="button" disabled={!canUndo} onClick={onUndo} title="Ctrl / Cmd + Z">Undo</button><button type="button" disabled={!canRedo} onClick={onRedo} title="Ctrl / Cmd + Shift + Z">Redo</button><button type="button" onClick={()=>choose(surpriseLook(look))}>Surprise me</button></div>
-    <div role="tablist" aria-label="Studio settings" className="studio-tabs">
+    <legend>{advanced?'Editor':'Presets'} <span className="selected-style">{style}{!sameSettings(settings,presets[style])?' · adjusted':''}</span></legend>
+    <div className="editor-mode-switch"><button type="button" className="mode-toggle" aria-expanded={advanced} aria-controls="advanced-editor-tools" onClick={()=>{setAdvanced(v=>!v);setTab('Style');}}>{advanced?'← Back to presets':'Advanced editor →'}</button><p className="hint">{advanced?'All styling tools · changes are kept when you return.':'Want more control? Open all styling tools.'}</p></div>
+    <div className="history-actions" hidden={!advanced}><button type="button" disabled={!canUndo} onClick={onUndo} title="Ctrl / Cmd + Z">Undo</button><button type="button" disabled={!canRedo} onClick={onRedo} title="Ctrl / Cmd + Shift + Z">Redo</button><button type="button" onClick={()=>choose(surpriseLook(look))}>Surprise me</button></div>
+    <div role="tablist" hidden={!advanced} aria-label="Studio settings" className="studio-tabs">
       {tabs.map((name,i)=><button key={name} type="button" role="tab" id={'studio-tab-'+name} aria-controls={'studio-panel-'+name} aria-selected={tab===name} tabIndex={tab===name?0:-1} ref={el=>{buttons.current[i]=el;}} onClick={()=>setTab(name)} onKeyDown={e=>tabKey(e,i)}>{name}</button>)}
     </div>
-    <div role="tabpanel" id="studio-panel-Style" aria-labelledby="studio-tab-Style" hidden={tab!=='Style'}>
-      <StyleLibrary style={style} onSelect={name=>onChange({...presets[name]},name)}/>
-      <SavedLooks look={look} onApply={choose}/>
+    <div role={advanced?'tabpanel':undefined} id="studio-panel-Style" aria-labelledby={advanced?'studio-tab-Style':undefined} hidden={advanced&&tab!=='Style'}>
+      <StyleLibrary advanced={advanced} style={style} onSelect={name=>onChange({...presets[name]},name)}/>
+      <div hidden={!advanced}><SavedLooks look={look} onApply={choose}/></div>
     </div>
+    <div id="advanced-editor-tools" hidden={!advanced}>
     <div role="tabpanel" id="studio-panel-Adjust" aria-labelledby="studio-tab-Adjust" hidden={tab!=='Adjust'}>
       {range(controls[0])}<p className="hint" id="detail-help">Smaller marks = more detail.</p><GlyphPanel settings={settings} onChange={onChange}/>{range(controls[1])}{range(controls[2])}<TonalPanel settings={settings} onChange={onChange} onAuto={onAuto}/>
       {(!settings.mode||settings.mode==='glyph')&&<>
@@ -70,5 +73,6 @@ export function SettingsPanel({settings,onChange,disabled,style,reduced,onReduce
     </div>
     <div role="tabpanel" id="studio-panel-Motion" aria-labelledby="studio-tab-Motion" hidden={tab!=='Motion'}><MotionPanel settings={settings} onChange={onChange} reduced={reduced}/></div>
     <div role="tabpanel" id="studio-panel-Effects" aria-labelledby="studio-tab-Effects" hidden={tab!=='Effects'}><EffectsPanel settings={settings} onChange={onChange} section="effects"/></div>
+    </div>
   </fieldset>;
 }

@@ -1,11 +1,11 @@
 import {useEffect,useState} from 'react';
-import {presets,styleDescriptions} from '../engine/settings.ts';
+import {presets,styleDescriptions,featuredPresets,featuredCaptions} from '../engine/settings.ts';
 import {Renderer} from '../engine/renderer.ts';
 import {demoFile} from '../media/demo.ts';
-const names=Object.keys(presets);
-const initial=names.slice(0,4);
+const initial:readonly string[]=featuredPresets;
+const names=[...initial,...Object.keys(presets).filter(name=>!initial.includes(name))];
 
-export function StyleLibrary({style,onSelect}:{style:string;onSelect:(name:string)=>void}){
+export function StyleLibrary({style,onSelect,advanced}:{style:string;onSelect:(name:string)=>void;advanced:boolean}){
   const [expanded,setExpanded]=useState(false);
   const [thumbs,setThumbs]=useState<Record<string,string>>({});
   useEffect(()=>{
@@ -31,15 +31,16 @@ export function StyleLibrary({style,onSelect}:{style:string;onSelect:(name:strin
     }
     void generate();return()=>{cancelled=true;};
   },[]);
-  const visible=expanded?names:[...initial,...(!initial.includes(style)?[style]:[])];
-  return <div className="style-library">
+  const visible=advanced&&expanded?names:[...initial,...(!initial.includes(style)?[style]:[])];
+  return <div className={'style-library'+(!advanced?' featured-library':'')}>
+    {!advanced&&<p className="preset-intro">Choose a look. Every preset is ready to use.</p>}
     <div className="presets style-grid" role="group" aria-label="Style">
-      {visible.map(name=><button type="button" className="style-card" key={name} aria-pressed={style===name} title={styleDescriptions[name]} onClick={()=>onSelect(name)}>
+      {visible.map(name=><button type="button" className="style-card" key={name} aria-pressed={style===name} aria-label={name} title={styleDescriptions[name]} onClick={()=>onSelect(name)}>
         {thumbs[name]?<img src={thumbs[name]} alt="" width={160} height={137}/>:<span className="style-placeholder" aria-hidden="true">.:*#@</span>}
-        <span>{name}</span>
+        <span>{name}</span>{!advanced&&featuredCaptions[name]&&<span className="preset-caption">{featuredCaptions[name]}</span>}
       </button>)}
     </div>
-    <button type="button" className="style-expand" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?'Show essentials':`Browse all ${names.length} styles`}</button>
-    <p className="hint style-description">{styleDescriptions[style]}</p>
+    {advanced&&<button type="button" className="style-expand" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?'Show essentials':`Browse all ${names.length} styles`}</button>}
+    <p className="hint style-description">{styleDescriptions[style]}</p>{!advanced&&<p className="hint preset-preview-note">Thumbnails show the demo image. Your artwork updates in the main preview.</p>}
   </div>;
 }

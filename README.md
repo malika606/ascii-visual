@@ -1,6 +1,6 @@
 # ASCII Visual · v3.0.0
 
-Local-first image, GIF and short-video artwork studio. The v3 rendering upgrade adds 25 styles, 16 mark modes, measured glyph mapping, six dither algorithms, spatial Braille, hybrid layers, true PNG alpha, geometry, lighting, levels and non-destructive framing. The accepted intro and local-only media workflow are preserved. Release candidate verification is tracked in GitHub Actions; see VERIFICATION.md for limitations.
+Local-first image, GIF and short-video artwork studio. The v3 rendering upgrade adds 26 styles, 16 mark modes, measured glyph mapping, six dither algorithms, spatial Braille, hybrid layers, true PNG alpha, geometry, lighting, levels and non-destructive framing. The accepted intro and local-only media workflow are preserved. Release candidate verification is tracked in GitHub Actions; see VERIFICATION.md for limitations.
 
 ## Quick start
 
@@ -182,3 +182,6 @@ Preview zoom Fit/150/200/300/400% enlarges the preview only, with scrollable ove
 
 ### Final quality audit (stage 8)
 Run `python tests/quality_audit.py` against Vite with Playwright Chromium. Six fixed scenes (the procedural bouquet and five synthetic fixtures) generate 30 real artwork variants, a comparison sheet, individual PNGs and timing/pixel statistics in the CI artifact `ascii-visual-browser-screenshots/quality`. Ordered-no-comp disables ink compensation and measured mapping on the **current** engine; it is not a v1 screenshot. Tests check nonempty distinct frames, reproducibility, fresh-render parity, dimensions and masked borders. Timing includes PNG encoding and is descriptive, not a device FPS guarantee. Static-source edge/dither analysis is reused across animated mark frames. Browser smoke now selects Style explicitly before starting motion tests and checks native video crop dimensions when codecs are available. Final subjective review, physical mobile testing and direct comparison against ASCII Magic remain outside the automated guarantee.
+
+### Preset-first editor
+The editor opens with eight featured looks: Fine, Hybrid, Bloom, Terminal, Halftone, Pixel, Dither and Braille. This curated selection covers recognizable ASCII, hybrid color, animation, retro terminal, print and raster aesthetics; it is not based on measured user popularity. Hybrid is a new complete preset using the existing blurred backdrop, screen blending and ink compensation. Advanced editor opens the full five-tab studio, all 26 styles through Browse all, history and My looks. Back to presets keeps the selected look, edits, source and framing; a non-featured selected look remains visible. The thumbnail artwork is generated from the local demo, not the user's upload. Preview and export remain accessible in both modes.
