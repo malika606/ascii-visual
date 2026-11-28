@@ -1,6 +1,7 @@
 import type {Cell} from './pixels.ts';
 import type {Settings} from './settings.ts';
 import {seed} from './motion.ts';
+import {drawGeometry,isGeometricMode} from './geometry.ts';
 import {colorMapper} from './palette.ts';
 
 // Ordered 4×4 threshold screen, anchored in artwork coordinates.
@@ -27,6 +28,7 @@ function dot(ctx:CanvasRenderingContext2D,x:number,y:number,r:number){
 export function drawMark(ctx:CanvasRenderingContext2D,c:Cell,s:Settings,glyph:string,x:number,y:number,cw:number,ch:number,edge?:ReturnType<typeof edgeStrength>){
   const tone=c.light/255,unit=Math.min(cw,ch),mode=s.mode??'glyph';
   const rand=seed(c.x,c.y),other=seed(c.x+311,c.y+71);
+  if(isGeometricMode(mode)){drawGeometry(ctx,mode,s,c.light,x,y,cw,ch,c.x,c.y);return;}
   switch(mode){
     case 'glyph':ctx.fillText(glyph,x,y);break;
     case 'braille':ctx.fillText(c.brailleBits===undefined?brailleGlyph(c.light):String.fromCodePoint(0x2800+c.brailleBits),x,y);break;
