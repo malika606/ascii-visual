@@ -5,7 +5,8 @@ import {animate} from './motion.ts';
 import {creativeFrame,isCreativeMotion} from './creativeMotion.ts';
 import {drawMark,edgeStrength} from './marks.ts';
 import {colorMapper} from './palette.ts';
-import {GlyphCoverage,MARK_FONT} from './coverage.ts';
+import {detailLight,detailMap} from './detail.ts';
+import {GlyphCoverage,markFont} from './coverage.ts';
 import {Compositor,compositeSettings} from './composite.ts';
 import {EffectsRenderer} from './effects.ts';
 import type {Settings} from './settings.ts';
@@ -33,13 +34,23 @@ export class Renderer {
       this.cached=options.staticSource?{frame,settings:s,cols,rows,cells}:undefined;
     }
     const chars=Array.from(s.ramp),color=colorMapper(s),motion=isCreativeMotion(s.effect)?creativeFrame(s,t):undefined;
-    const edges=s.mode==='contours'?new Float32Array(cols*rows):undefined;
-    if(edges)for(const c of cells)edges[c.y*cols+c.x]=c.light;
+    const glyphMode=!s.mode||s.mode==='glyph',density=s.density??100,emphasis=s.edgeEmphasis??0,markScale=(s.markSize??100)/100;
+    const edges=s.mode==='contours'||emphasis>0?detailMap(cells,cols,rows):undefined;
     const scale=Math.min(size.width/w,size.height/h),contentW=w*scale,contentH=h*scale;const ox=(size.width-contentW)/2,oy=(size.height-contentH)/2,cw=contentW/cols,ch=contentH/rows;
     const composition=compositeSettings(s);this.compositor.backdrop(ctx,frame,composition,ox,oy,contentW,contentH);
-    const markCtx=this.compositor.marksContext(ctx,composition);markCtx.font=`${s.glyphWeight??400} ${Math.min(ch,cw/.62)*.96}px ${MARK_FONT}`;markCtx.textAlign='center';markCtx.textBaseline='middle';
-    const gains=(!s.mode||s.mode==='glyph')&&(s.monochrome||s.palette!=='white'&&s.palette!=='paper')?this.coverage.prepare(chars,cw/ch,s.glyphWeight??400,s.coverageCompensation??65):undefined;
-    for(const c of cells){const a=animate(c,t,cols,rows,s,reduced,chars,motion);if(a.opacity<.01||composition.markOpacity===0)continue;markCtx.globalAlpha=a.opacity;markCtx.fillStyle=color(c,gains?.get(a.glyph)??1);drawMark(markCtx,c,s,a.glyph,ox+(c.x+.5+a.dx)*cw,oy+(c.y+.5+a.dy)*ch,cw,ch,edges?edgeStrength(edges,cols,rows,c.x,c.y):undefined);}
+    const markCtx=this.compositor.marksContext(ctx,composition);markCtx.font=markFont(cw,ch,s.glyphWeight??400,markScale);markCtx.textAlign='center';markCtx.textBaseline='middle';
+    const measured=glyphMode?this.coverage.prepare(chars,cw/ch,s.glyphWeight??400,s.monochrome||s.palette!=='white'&&s.palette!=='paper'?s.coverageCompensation??65:0,markScale):undefined;
+    const calibrated=measured&&s.glyphMapping!=='ordered',motionChars=calibrated?measured.ordered:chars;
+    for(const c of cells){
+      if(composition.markOpacity===0)break;
+      const light=detailLight(c,density,emphasis,edges,cols,rows);
+      const glyph=calibrated?measured.lookup[Math.round(light)]:(chars[Math.round(light/255*(chars.length-1))]??' ');
+      const mark=light===c.light&&glyph===c.glyph?c:{...c,light,glyph};
+      const a=animate(mark,t,cols,rows,s,reduced,motionChars,motion);if(a.opacity<.01)continue;
+      markCtx.globalAlpha=a.opacity;markCtx.fillStyle=color(c,measured?.gains.get(a.glyph)??1);
+      const edge=s.mode==='contours'&&edges?edgeStrength(edges,cols,rows,c.x,c.y):undefined;
+      drawMark(markCtx,mark,s,a.glyph,ox+(c.x+.5+a.dx)*cw,oy+(c.y+.5+a.dy)*ch,cw*markScale,ch*markScale,edge);
+    }
     markCtx.globalAlpha=1;
     this.compositor.finish(ctx,markCtx,composition,options.opaque===true||options.videoResolution===true);
     // Existing opaque post-processing passes are bypassed for alpha artwork.

@@ -39,6 +39,22 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     page.get_by_role('button',name='Reset tone',exact=True).click()
     tab('Style')
     print('PASS tonal controls, auto enhance, undo and measured ink compensation',flush=True)
+    tab('Style');page.get_by_role('button',name='Fine',exact=True).click();tab('Adjust')
+    art=page.get_by_label('Rendered ASCII artwork',exact=True)
+    page.get_by_label('Custom characters',exact=True).fill('@.+#');page.get_by_role('button',name='Apply characters',exact=True).click()
+    frame=lambda:art.evaluate('(c)=>c.toDataURL()')
+    measured=frame();page.get_by_role('combobox',name='Glyph mapping',exact=True).select_option('ordered')
+    assert frame()!=measured
+    page.get_by_role('combobox',name='Glyph mapping',exact=True).select_option('measured')
+    size=page.get_by_role('slider',name='Mark size',exact=True);size.fill('50')
+    ink_sum=lambda:art.evaluate("c=>{const p=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let i=0;i<p.length;i+=4)if(p[i]+p[i+1]+p[i+2]>20)n++;return n}")
+    small=ink_sum();size.fill('130');assert ink_sum()>small*1.1
+    size.fill('100');density=page.get_by_role('slider',name='Density',exact=True);density.fill('50');sparse=frame()
+    density.fill('160');assert frame()!=sparse
+    density.fill('100');before=frame();page.get_by_role('slider',name='Edge emphasis',exact=True).fill('100');assert frame()!=before
+    page.get_by_role('button',name='Reset geometry',exact=True).click()
+    tab('Style');page.get_by_role('button',name='Bloom',exact=True).click()
+    print('PASS measured mapping, independent mark size coverage, density and edge emphasis',flush=True)
     # Tabs use the expected keyboard navigation and only one panel is visible.
     page.get_by_role('tab',name='Style',exact=True).focus();page.keyboard.press('ArrowRight')
     expect(page.get_by_role('tab',name='Adjust',exact=True)).to_be_focused()

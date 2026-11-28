@@ -7,6 +7,7 @@ import {StyleLibrary} from './StyleLibrary.tsx';
 import {EffectsPanel} from './EffectsPanel.tsx';
 import {MotionPanel} from './MotionPanel.tsx';
 import {CompositingPanel} from './CompositingPanel.tsx';
+import {GlyphPanel} from './GlyphPanel.tsx';
 import {TonalPanel} from './TonalPanel.tsx';
 import {SavedLooks} from './SavedLooks.tsx';
 export const ramps = {Classic:presets.Bloom.ramp,Numbers:'0123456789',Binary:'01',Blocks:'░▒▓█'};
@@ -47,11 +48,11 @@ export function SettingsPanel({settings,onChange,disabled,style,reduced,onReduce
       <SavedLooks look={look} onApply={choose}/>
     </div>
     <div role="tabpanel" id="studio-panel-Adjust" aria-labelledby="studio-tab-Adjust" hidden={tab!=='Adjust'}>
-      {range(controls[0])}<p className="hint" id="detail-help">Smaller marks = more detail.</p>{range(controls[1])}{range(controls[2])}<TonalPanel settings={settings} onChange={onChange} onAuto={onAuto}/>
+      {range(controls[0])}<p className="hint" id="detail-help">Smaller marks = more detail.</p><GlyphPanel settings={settings} onChange={onChange}/>{range(controls[1])}{range(controls[2])}<TonalPanel settings={settings} onChange={onChange} onAuto={onAuto}/>
       {(!settings.mode||settings.mode==='glyph')&&<>
         <label className="select">Characters<select aria-label="Characters" value={chosen} onChange={e=>{const key=e.target.value;const ramp=key==='custom'?' .:+#@':ramps[key as keyof typeof ramps]??presets[style].ramp;onChange({...settings,ramp});}}>{!Object.values(ramps).includes(presets[style].ramp)&&<option value="preset">{style} original</option>}{Object.entries(ramps).map(([name,chars])=><option key={name} value={name}>{name} · {chars}</option>)}<option value="custom">Custom</option></select></label>
         <label className="select">Custom characters<input aria-label="Custom characters" aria-describedby="ramp-help" maxLength={128} value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();applyRamp();}}}/></label>
-        <p className="hint" id="ramp-help">1–64 printable characters, ordered from sparse to dense. Spaces are allowed.</p>
+        <p className="hint" id="ramp-help">1–64 printable characters. Measured mapping sorts by ink area; original ramp order uses your sequence. Spaces are allowed.</p>
         <button type="button" className="wide" disabled={!validRamp(draft)||draft===settings.ramp} onClick={applyRamp}>Apply characters</button>
       </>}
       <details className="advanced"><summary>Advanced settings</summary><div className="advanced-body">
