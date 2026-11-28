@@ -10,7 +10,7 @@ with sync_playwright() as p:
     errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     open_ui(page);page.get_by_role('button',name='MAKE IT ASCII').click()
     expect(page.locator('.status')).to_have_text('Source ready.')
-    expect(page.locator('.style-grid img')).to_have_count(9,timeout=15000)
+    expect(page.locator('.style-grid img')).to_have_count(8,timeout=15000)
     page.screenshot(path=str(folder/'studio-desktop.png'),full_page=True)
     for w,h in [(390,844),(320,568)]:
         page.set_viewport_size({'width':w,'height':h});assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
@@ -57,8 +57,8 @@ with sync_playwright() as p:
     page.get_by_role('tab',name='Style',exact=True).click();page.get_by_role('button',name='Bloom',exact=True).click()
     page.get_by_role('tab',name='Style',exact=True).click()
     print('PASS paired artwork captures and dark-patch brightness with black preservation',flush=True)
-    page.get_by_role('button',name='Browse all 27 styles').click()
-    expect(page.locator('.style-grid img')).to_have_count(27,timeout=15000)
+    page.get_by_role('button',name='Browse all 30 styles').click()
+    expect(page.locator('.style-grid img')).to_have_count(30,timeout=15000)
     page.screenshot(path=str(folder/'studio-gallery.png'),full_page=True)
     for name in ('Cross','Diamond','Lines','Diagonal','Stud mosaic','Voxel','Disco'):
         page.get_by_role('button',name=name,exact=True).click()
