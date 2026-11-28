@@ -191,8 +191,10 @@ test('dither algorithms deterministic, preserve masks and use different spatial 
  // Both Bayer matrices legitimately produce the same checkerboard at 50%.
  const flat=new Float32Array(64).fill(128);
  assert.deepEqual(ditherMap(flat,8,8,'bayer4'),ditherMap(flat,8,8,'bayer8'));
- const quarter=new Float32Array(64).fill(80);
+ const quarter=new Float32Array(64).fill(75);
  assert.notDeepEqual(ditherMap(quarter,8,8,'bayer4'),ditherMap(quarter,8,8,'bayer8'));
+ assert.equal(ditherMap(quarter,8,8,'bayer4').reduce((a,b)=>a+b,0),20);
+ assert.equal(ditherMap(quarter,8,8,'bayer8').reduce((a,b)=>a+b,0),19);
  const half=ditherMap(new Float32Array(64).fill(128),8,8,'bayer8');assert.equal(half.reduce((a,b)=>a+b,0),32);
 });
 test('spatial Braille maps all eight independent positions to correct Unicode dots',()=>{
