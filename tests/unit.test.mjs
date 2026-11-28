@@ -26,7 +26,7 @@ test('high resolution PNG is source-bounded and separate from video cap',()=>{as
 
 import {brailleGlyph,ditherOn,edgeStrength,markColor} from '../src/engine/marks.ts';
 import {presets,styleDescriptions} from '../src/engine/settings.ts';
-test('18 labelled styles use ten render modes and preserve the original four',()=>{assert.equal(Object.keys(presets).length,18);assert.equal(new Set(Object.values(presets).map(s=>s.mode??'glyph')).size,10);for(const name of Object.keys(presets))assert.ok(styleDescriptions[name]);assert.equal(presets.Bloom.cell,9);assert.equal(presets.Fine.cell,6);});
+test('25 labelled styles use sixteen render modes and preserve the original four',()=>{assert.equal(Object.keys(presets).length,25);assert.equal(new Set(Object.values(presets).map(s=>s.mode??'glyph')).size,16);for(const name of Object.keys(presets))assert.ok(styleDescriptions[name]);assert.equal(presets.Bloom.cell,9);assert.equal(presets.Fine.cell,6);});
 test('ordered dither coverage, Braille density and contour response',()=>{assert.equal(brailleGlyph(0),'\u2800');assert.equal(brailleGlyph(255),'\u28ff');let n=0;for(let y=0;y<4;y++)for(let x=0;x<4;x++)if(ditherOn(128,x,y))n++;assert.equal(n,8);assert.equal(edgeStrength(new Float32Array(9).fill(100),3,3,1,1).strength,0);assert.ok(edgeStrength(Float32Array.from([0,0,255,0,0,255,0,0,255]),3,3,1,1).strength>.9);});
 test('style palettes and explicit green override',()=>{const c={x:0,y:0,glyph:'@',red:1,green:2,blue:3,light:255};assert.equal(markColor(c,{...defaultSettings,palette:'amber'}),'rgb(255,188,68)');assert.equal(markColor(c,{...defaultSettings,palette:'white',monochrome:true}),'rgb(1,2,3)');});
 
@@ -180,7 +180,7 @@ test('density and edge emphasis preserve endpoints, alter midtones and do not cr
 import {ditherMap,ditherLabels} from '../src/engine/dither.ts';
 import {braillePattern,spatialBrailleCells,brailleWeights} from '../src/engine/braille.ts';
 test('dither algorithms deterministic, preserve masks and use different spatial patterns',()=>{
- const w=32,h=32,tones=new Float32Array(w*h).fill(128);tones[0]=-1;
+ const w=32,h=32,tones=Float32Array.from({length:w*h},(_,i)=>Math.round((i%w)*255/(w-1)));tones[0]=-1;
  const patterns=new Set();
  for(const algorithm of Object.keys(ditherLabels)){
    const a=ditherMap(tones,w,h,algorithm),b=ditherMap(tones,w,h,algorithm);
@@ -188,6 +188,13 @@ test('dither algorithms deterministic, preserve masks and use different spatial 
    assert.ok(ditherMap(tones,w,h,algorithm,10).reduce((a,b)=>a+b,0)>=ditherMap(tones,w,h,algorithm,90).reduce((a,b)=>a+b,0));
  }
  assert.equal(patterns.size,6);
+ // Both Bayer matrices legitimately produce the same checkerboard at 50%.
+ const flat=new Float32Array(64).fill(128);
+ assert.deepEqual(ditherMap(flat,8,8,'bayer4'),ditherMap(flat,8,8,'bayer8'));
+ const quarter=new Float32Array(64).fill(75);
+ assert.notDeepEqual(ditherMap(quarter,8,8,'bayer4'),ditherMap(quarter,8,8,'bayer8'));
+ assert.equal(ditherMap(quarter,8,8,'bayer4').reduce((a,b)=>a+b,0),20);
+ assert.equal(ditherMap(quarter,8,8,'bayer8').reduce((a,b)=>a+b,0),19);
  const half=ditherMap(new Float32Array(64).fill(128),8,8,'bayer8');assert.equal(half.reduce((a,b)=>a+b,0),32);
 });
 test('spatial Braille maps all eight independent positions to correct Unicode dots',()=>{
@@ -200,4 +207,11 @@ test('spatial Braille maps all eight independent positions to correct Unicode do
  assert.equal(braillePattern(new Float32Array(8).fill(-1),10),0);
  assert.equal(braillePattern(new Float32Array(8).fill(255),90),255);
  assert.ok(validLook({style:'Braille',settings:{...presets.Braille,brailleSampling:'spatial',brailleThreshold:40}}));
+});
+
+import {geometryScale,shadeColor,geometricModes} from '../src/engine/geometry.ts';
+test('geometric marks scale monotonically and use bounded shading',()=>{
+ assert.equal(geometryScale(0),0);assert.equal(geometryScale(255),1);assert.ok(geometryScale(100)<geometryScale(200));
+ assert.equal(shadeColor('#804020',0),'rgb(128,64,32)');assert.equal(shadeColor('#804020',-1),'rgb(0,0,0)');assert.equal(shadeColor('rgb(128,64,32)',1),'rgb(255,255,255)');
+ assert.equal(geometricModes.length,6);assert.ok(validLook({style:'Voxel',settings:{...presets.Voxel,shapeRelief:80}}));assert.ok(!validLook({style:'Lines',settings:{...presets.Lines,shapeAngle:181}}));
 });

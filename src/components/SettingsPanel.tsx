@@ -55,7 +55,7 @@ export function SettingsPanel({settings,onChange,disabled,style,reduced,onReduce
         <p className="hint" id="ramp-help">1–64 printable characters. Measured mapping sorts by ink area; original ramp order uses your sequence. Spaces are allowed.</p>
         <button type="button" className="wide" disabled={!validRamp(draft)||draft===settings.ramp} onClick={applyRamp}>Apply characters</button>
       </>}
-      <details className="advanced"><summary>Advanced settings</summary><div className="advanced-body">
+      <details className="advanced" id="source-mask-settings"><summary>Advanced settings</summary><div className="advanced-body">
         <label className="select">Background mode<select aria-label="Background mode" value={settings.background} onChange={e=>onChange({...settings,background:e.target.value as BackgroundMode})}><option value="dark">Dark / transparent</option><option value="light">Light</option><option value="color">Chosen color</option></select></label>
         {settings.background==='color'&&<label className="check color-picker">Background color <input type="color" value={settings.keyColor} onChange={e=>onChange({...settings,keyColor:e.target.value})}/></label>}
         {settings.background!=='dark'&&<><label className="range"><span>Background tolerance<output>{settings.tolerance}%</output></span><input aria-label="Background tolerance" type="range" min={0} max={100} step={1} value={settings.tolerance} onChange={e=>onChange({...settings,tolerance:Number(e.target.value)})}/></label><p className="hint">Masks matching colors, including parts of the subject.</p></>}
