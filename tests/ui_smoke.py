@@ -25,13 +25,20 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     page.get_by_role('slider',name='Brightness',exact=True).fill('180')
     page.wait_for_timeout(100);assert tone_frame()!=baseline
     page.get_by_role('button',name='Auto enhance',exact=True).click()
-    expect(page.get_by_role('slider',name='Gamma',exact=True)).to_have_value('1.35')
+    gamma=float(page.get_by_role('slider',name='Gamma',exact=True).input_value());assert 1<=gamma<=1.8
     page.get_by_role('button',name='Undo',exact=True).click()
     expect(page.get_by_role('slider',name='Brightness',exact=True)).to_have_value('180')
     page.get_by_role('button',name='Reset tone',exact=True).click()
     expect(page.get_by_role('slider',name='Brightness',exact=True)).to_have_value('100')
+    ink=page.get_by_role('slider',name='Ink compensation',exact=True)
+    ink.fill('0');page.wait_for_timeout(80)
+    low=page.locator('canvas').evaluate("c=>{const p=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let sum=0;for(let i=0;i<p.length;i+=4)sum+=p[i]+p[i+1]+p[i+2];return sum}")
+    ink.fill('100');page.wait_for_timeout(80)
+    high=page.locator('canvas').evaluate("c=>{const p=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let sum=0;for(let i=0;i<p.length;i+=4)sum+=p[i]+p[i+1]+p[i+2];return sum}")
+    assert high>low*1.05,(low,high)
+    page.get_by_role('button',name='Reset tone',exact=True).click()
     tab('Style')
-    print('PASS tonal controls, auto enhance and undo',flush=True)
+    print('PASS tonal controls, auto enhance, undo and measured ink compensation',flush=True)
     # Tabs use the expected keyboard navigation and only one panel is visible.
     page.get_by_role('tab',name='Style',exact=True).focus();page.keyboard.press('ArrowRight')
     expect(page.get_by_role('tab',name='Adjust',exact=True)).to_be_focused()

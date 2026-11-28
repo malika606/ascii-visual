@@ -33,7 +33,7 @@ export function validRamp(value:unknown):value is string{
   return typeof value==='string'&&Array.from(value).length>=1&&Array.from(value).length<=64&&value.trim().length>0&&!/[\p{C}\p{Zl}\p{Zp}]/u.test(value);
 }
 const ranges={cell:[2,32],contrast:[.5,2],saturation:[0,2],threshold:[0,100],tolerance:[0,100],speed:[.25,2]} as const;
-const optionalRanges={motionIntensity:[0,100],motionDuration:[1,5],brightness:[50,250],gamma:[.5,2.5],shadows:[0,60],highlights:[-50,50],colorBoost:[50,200],glyphWeight:[400,700]} as const;
+const optionalRanges={motionIntensity:[0,100],motionDuration:[1,5],brightness:[50,250],gamma:[.5,2.5],shadows:[0,60],highlights:[-50,50],colorBoost:[50,200],glyphWeight:[400,700],coverageCompensation:[0,100]} as const;
 const allowedEnums={background:['dark','light','color'],effect:['none','reveal','wave','glimmer',...Object.keys(creativeMotionLabels)],mode:['glyph','dots','pixel','dither','braille','contours','stipple','led','hatch','particles'],palette:['source','white','amber','paper','rose','ocean','sunset','ice','custom'],motionDirection:['up','down','left','right','outward','inward']} as const;
 const inRange=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
 const hex=(v:unknown)=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v);

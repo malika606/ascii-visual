@@ -127,3 +127,24 @@ test('color boost is independent of mark density, masking precedes correction an
  assert.equal(a.length,1);assert.equal(b.length,1);assert.equal(a[0].glyph,b[0].glyph);assert.equal(a[0].light,b[0].light);assert.ok(b[0].red>a[0].red);
  assert.ok(validLook({style:'Bloom',settings:{...defaultSettings,brightness:140,gamma:1.5,glyphWeight:700,invert:true}}));
 });
+
+import {softContrast,gainRgb,coverageGain} from '../src/engine/tonal.ts';
+test('soft contrast keeps dark tones, fixed endpoints and monotonic order',()=>{
+ for(const c of [.5,1,1.25,2]){assert.equal(softContrast(0,c),0);assert.equal(softContrast(255,c),255);for(let v=1;v<=255;v++)assert.ok(softContrast(v,c)>softContrast(v-1,c));}
+ assert.ok(softContrast(15,1.5)>0);assert.deepEqual(gainRgb(160,80,40,3),[255,128,64]);
+ assert.equal(coverageGain(.1,0),1);assert.ok(coverageGain(.1,65)>coverageGain(.5,65));assert.ok(coverageGain(.01,100)<=3);
+});
+test('shadow correction is applied before contrast and does not revive masked pixels',()=>{
+ const data=Uint8ClampedArray.from([18,18,18,255,32,16,8,255,0,0,0,255,255,255,255,0]);
+ const a=pixelsToCells(data,4,1,{...defaultSettings,threshold:0,contrast:1.5,saturation:1});
+ const b=pixelsToCells(data,4,1,{...defaultSettings,threshold:0,contrast:1.5,saturation:1,gamma:1.8});
+ assert.equal(a.length,2);assert.equal(b.length,2);assert.ok(a[0].light>0&&b[0].light>a[0].light);
+ assert.ok(b[1].red>b[1].green&&b[1].green>b[1].blue);
+ assert.ok(validLook({style:'Fine',settings:{...presets.Fine,coverageCompensation:65}}));
+ assert.ok(!validLook({style:'Fine',settings:{...presets.Fine,coverageCompensation:101}}));
+});
+test('auto exposure is less aggressive on already bright sources',()=>{
+ const dark=autoExposure([12,20,35,48,62]),bright=autoExposure([150,190,220,240,250]);
+ assert.ok(dark.gamma>bright.gamma&&dark.brightness>bright.brightness);
+ assert.equal(bright.colorBoost,100);
+});
