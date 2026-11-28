@@ -1,11 +1,12 @@
 import type {Settings} from './settings.ts';
+import {toneValue,boostColor} from './tonal.ts';
 export const clamp = (n:number,min=0,max=255) => Math.max(min,Math.min(max,n));
 export const luminance = (r:number,g:number,b:number) => .2126*r+.7152*g+.0722*b;
 export function glyphForBrightness(value:number,ramp:string):string {
   const chars=Array.from(ramp); if (!chars.length) return ' ';
   return chars[Math.round(clamp(value)/255*(chars.length-1))];
 }
-export interface Cell {x:number;y:number;glyph:string;red:number;green:number;blue:number;light:number}
+export interface Cell {x:number;y:number;glyph:string;red:number;green:number;blue:number;light:number;colorLight?:number}
 export function pixelsToCells(data:Uint8ClampedArray,cols:number,rows:number,s:Settings):Cell[] {
   const cells:Cell[]=[];const chars=Array.from(s.ramp);
   const key=/^#[0-9a-f]{6}$/i.test(s.keyColor)?parseInt(s.keyColor.slice(1),16):0xffffff;
@@ -17,9 +18,11 @@ export function pixelsToCells(data:Uint8ClampedArray,cols:number,rows:number,s:S
     if(s.background==='color' && Math.hypot(data[p]-kr,data[p+1]-kg,data[p+2]-kb)/Math.sqrt(3)<=clamp(s.tolerance,0,100)*2.55)continue;
     const r=data[p]*alpha,g=data[p+1]*alpha,b=data[p+2]*alpha;
     const l=luminance(r,g,b); if(l<=s.threshold || alpha===0) continue;
-    const light=clamp((l-128)*s.contrast+128);
-    const tone=(c:number)=>Math.round(clamp(((l+(c-l)*s.saturation)-128)*s.contrast+128));
-    cells.push({x:i%cols,y:Math.floor(i/cols),glyph:chars[Math.round(light/255*(chars.length-1))]??' ',red:s.monochrome?Math.round(light*.35):tone(r),green:s.monochrome?Math.round(light):tone(g),blue:s.monochrome?Math.round(light*.55):tone(b),light});
+    const corrected=toneValue(clamp((l-128)*s.contrast+128),s);
+    const light=s.invert?255-corrected:corrected;
+    const colorLight=boostColor(corrected,s);
+    const tone=(c:number)=>Math.round(boostColor(toneValue(clamp(((l+(c-l)*s.saturation)-128)*s.contrast+128),s),s));
+    cells.push({x:i%cols,y:Math.floor(i/cols),glyph:chars[Math.round(light/255*(chars.length-1))]??' ',red:s.monochrome?Math.round(colorLight*.35):tone(r),green:s.monochrome?Math.round(colorLight):tone(g),blue:s.monochrome?Math.round(colorLight*.55):tone(b),light,colorLight});
   } return cells;
 }
 export function fitSize(w:number,h:number,max=960){const ratio=Math.min(1,max/Math.max(w,h));return {width:Math.max(1,Math.round(w*ratio)),height:Math.max(1,Math.round(h*ratio))};}

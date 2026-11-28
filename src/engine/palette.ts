@@ -24,8 +24,8 @@ export function colorMapper(s:Settings):(c:Cell)=>string{
   const stops=gradientStops(s);
   if(stops){
     const table=Array.from({length:256},(_,i)=>gradientColor(stops[0],stops[1],i));
-    return c=>table[Math.max(0,Math.min(255,Math.round(c.light)))];
+    return c=>table[Math.max(0,Math.min(255,Math.round(c.colorLight??c.light)))];
   }
-  if(s.palette==='amber')return c=>`rgb(${Math.round(c.light)},${Math.round(188*c.light/255)},${Math.round(68*c.light/255)})`;
+  if(s.palette==='amber')return c=>`rgb(${Math.round(c.colorLight??c.light)},${Math.round(188*(c.colorLight??c.light)/255)},${Math.round(68*(c.colorLight??c.light)/255)})`;
   return ()=>s.palette==='paper'?'#e9dfc8':'#f3f3f3';
 }

@@ -19,6 +19,19 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     assert len(set(frames))==4, 'All ramps must change actual canvas pixels'
     tab('Style');page.get_by_role('button',name='Bloom').click();tab('Adjust');page.get_by_role('slider',name='Detail').fill('12');assert 'adjusted' in page.locator('.selected-style').inner_text();tab('Style');assert page.get_by_role('button',name='Bloom').get_attribute('aria-pressed')=='true';page.get_by_role('button',name='Bloom').click()
     print('PASS four distinct character ramps, style adjusted marker, primary controls',flush=True)
+    tab('Adjust')
+    tone_frame=lambda:page.locator('canvas').evaluate('(c)=>c.toDataURL()')
+    baseline=tone_frame()
+    page.get_by_role('slider',name='Brightness',exact=True).fill('180')
+    page.wait_for_timeout(100);assert tone_frame()!=baseline
+    page.get_by_role('button',name='Auto enhance',exact=True).click()
+    expect(page.get_by_role('slider',name='Gamma',exact=True)).to_have_value('1.35')
+    page.get_by_role('button',name='Undo',exact=True).click()
+    expect(page.get_by_role('slider',name='Brightness',exact=True)).to_have_value('180')
+    page.get_by_role('button',name='Reset tone',exact=True).click()
+    expect(page.get_by_role('slider',name='Brightness',exact=True)).to_have_value('100')
+    tab('Style')
+    print('PASS tonal controls, auto enhance and undo',flush=True)
     # Tabs use the expected keyboard navigation and only one panel is visible.
     page.get_by_role('tab',name='Style',exact=True).focus();page.keyboard.press('ArrowRight')
     expect(page.get_by_role('tab',name='Adjust',exact=True)).to_be_focused()
