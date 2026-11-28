@@ -5,7 +5,7 @@ import {SourceTools} from './components/SourceTools.tsx';
 import {initialTransform,transformedSource,type SourceTransform} from './media/transform.ts';
 import {SettingsPanel} from './components/SettingsPanel.tsx';
 import {Renderer} from './engine/renderer.ts';
-import {defaultSettings,type Settings} from './engine/settings.ts';
+import {demoSettings,demoStyle,type Settings} from './engine/settings.ts';
 import {initialHistory,historyReducer} from './engine/studio.ts';
 import {loadSource,type Source} from './media/source.ts';
 import {validateFile} from './media/validation.ts';
@@ -28,7 +28,7 @@ export default function App({active=true,onBack}:{active?:boolean;onBack?:()=>vo
   const [rawSource,setSource]=useState<Source|null>(null),[file,setFile]=useState<File|null>(null),[busy,setBusy]=useState(false),[restarting,setRestarting]=useState(false),[error,setError]=useState(''),[uploadError,setUploadError]=useState(''),[status,setStatus]=useState(''),[playing,setPlaying]=useState(false),[reduced,setReduced]=useState(()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches),[progress,setProgress]=useState<number|null>(null),[drag,setDrag]=useState(false),[revision,setRevision]=useState(0),[position,setPosition]=useState(0),[seeking,setSeeking]=useState(false),[side,setSide]=useState(960);
   const [transform,setTransform]=useState<SourceTransform>({...initialTransform}),[zoom,setZoom]=useState(100);
   const source=useMemo(()=>rawSource?transformedSource(rawSource,transform):null,[rawSource,transform]);
-  const [history,dispatch]=useReducer(historyReducer,{style:'Bloom',settings:defaultSettings},initialHistory);
+  const [history,dispatch]=useReducer(historyReducer,{style:demoStyle,settings:demoSettings},initialHistory);
   const {style,settings}=history.present;
   const originalCanvas=useRef<HTMLCanvasElement>(null),gesture=useRef<number|null>(null),gestureCounter=useRef(0),lastEffect=useRef(settings.effect);
   const [compare,setCompare]=useState(false),[split,setSplit]=useState(50);
@@ -119,7 +119,7 @@ export default function App({active=true,onBack}:{active?:boolean;onBack?:()=>vo
   const missing=['MP4','WebM'].filter(f=>!available.some(a=>a.extension===f.toLowerCase()));
   function downloadSelected(){if(!source||locked)return;if(still)void savePng(format==='html');else if(gifLike)void saveVideo(format==='html-loop'?'html-loop':'gif');else{const f=available.find(f=>f.extension===format);if(f)void saveVideo(f);}}
   return <main className="shell editor"><header className="editor-header"><div>{onBack&&<button className="editor-return" disabled={locked} onClick={()=>{setPlaying(false);source?.pause();onBack();}}>← Back to intro</button>}<div className="eyebrow">LAB / EXPERIMENT 01</div><h1 ref={heading} tabIndex={-1}>ASCII Visual<span>.</span></h1></div><p>Make pictures out of characters.<br/>Your files stay on this device.</p></header>
-    <div className="workspace"><section className="stage" aria-label="Preview"><div className="stage-top"><div className="source-info"><div className="eyebrow">{isDemo?'01 / DEMO EXAMPLE':'01 / YOUR SOURCE'}</div><strong className="filename" title={file?.name}>{file?.name??'No file loaded'}</strong><span className="hint">PNG, JPG, WebP, GIF, MP4, WebM · 30 MB max</span><span className="hint">Video up to 15 s · drop a file here</span></div><div className="source-actions"><input hidden ref={input} type="file" accept={accept} onChange={fileChanged}/><button className="upload" disabled={locked} onClick={()=>input.current?.click()}>{busy?'Loading…':'Upload file'} <span aria-hidden="true">↑</span></button><button className="demo" disabled={locked} onClick={()=>{changeSettings({...defaultSettings},'Bloom');void choose(demoFile(),true);}}>Use demo</button></div></div>
+    <div className="workspace"><section className="stage" aria-label="Preview"><div className="stage-top"><div className="source-info"><div className="eyebrow">{isDemo?'01 / DEMO EXAMPLE':'01 / YOUR SOURCE'}</div><strong className="filename" title={file?.name}>{file?.name??'No file loaded'}</strong><span className="hint">PNG, JPG, WebP, GIF, MP4, WebM · 30 MB max</span><span className="hint">Video up to 15 s · drop a file here</span></div><div className="source-actions"><input hidden ref={input} type="file" accept={accept} onChange={fileChanged}/><button className="upload" disabled={locked} onClick={()=>input.current?.click()}>{busy?'Loading…':'Upload file'} <span aria-hidden="true">↑</span></button><button className="demo" disabled={locked} onClick={()=>{changeSettings({...demoSettings},demoStyle);void choose(demoFile(),true);}}>Use demo</button></div></div>
       <SourceTools value={transform} disabled={locked||!source} onChange={next=>{setPlaying(false);source?.pause();rendererRef.current=null;setTransform(next);}}/>
       {uploadError&&<p className="error upload-error" role="alert">{uploadError}</p>}
       <div className={`viewport ${drag?'drag':''}`} onDragOver={e=>{e.preventDefault();if(!locked)setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={dropped}>

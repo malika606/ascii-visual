@@ -13,6 +13,8 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Verify supplied demo asset
+        run: echo 'f3d31428c712d3ef73677b9819906bf59cde6afe58b6f56591e3e73417e58a8b  src/assets/demo-cat.gif' | sha256sum -c -
       - run: npm ci
       - run: npm run typecheck
       - run: npm test

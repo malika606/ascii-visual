@@ -42,6 +42,7 @@ Object.assign(presets,{
   'Stud mosaic':look({mode:'stud',cell:14,shapeRelief:75}),
   Voxel:look({mode:'voxel',cell:14,shapeRelief:75}),
   Disco:look({mode:'disco',cell:12,shapeRelief:80}),
+  Noir:look({cell:4,contrast:1.15,saturation:0,threshold:1,gamma:1.35,glyphWeight:500,palette:'white',ramp:' .,:;irsXA253hMHGS#9B&@',backdrop:'black'}),
   Hybrid:look({cell:6,contrast:1.05,saturation:1.2,threshold:5,coverageCompensation:80,backdrop:'blurred',backdropColor:'#000000',backdropOpacity:45,backdropBlur:25,markOpacity:100,markBlend:'screen'})
 });
 export const styleDescriptions:Record<string,string>={
@@ -49,9 +50,12 @@ export const styleDescriptions:Record<string,string>={
  Microtype:'Extra-small characters',Matrix:'Green binary code',Dither:'Ordered or error-diffused raster screen',Halftone:'Colored variable-size dots',
  Pixel:'Color mosaic tiles',Braille:'Eight independently sampled Unicode dots',Contours:'Local brightness edges',Stipple:'Scattered ink dots',
  Typography:'Letter-based texture',LED:'Round colored display cells',Engraving:'Layered diagonal strokes',Particles:'Drifting specks',
- Newspaper:'High-contrast cream halftone',Amber:'Warm monochrome terminal',Cross:'Density-scaled plus shapes',Diamond:'Faceted diamond halftone',Lines:'Adjustable line screen',Diagonal:'Slanted line screen','Stud mosaic':'Raised round studs on colored tiles',Voxel:'Isometric shaded blocks',Disco:'Seeded reflective tile mosaic',Hybrid:'Detailed characters over a soft original-image layer'
+ Newspaper:'High-contrast cream halftone',Amber:'Warm monochrome terminal',Cross:'Density-scaled plus shapes',Diamond:'Faceted diamond halftone',Lines:'Adjustable line screen',Diagonal:'Slanted line screen','Stud mosaic':'Raised round studs on colored tiles',Voxel:'Isometric shaded blocks',Disco:'Seeded reflective tile mosaic',Hybrid:'Detailed characters over a soft original-image layer',Noir:'White characters on black, with fine grayscale detail'
 };
 
 // Editorial starter collection: diverse, recognizable treatments, not usage rankings.
-export const featuredPresets=['Fine','Hybrid','Bloom','Terminal','Halftone','Pixel','Dither','Braille'] as const;
-export const featuredCaptions:Record<string,string>={Fine:'Classic ASCII',Hybrid:'Rich color & depth',Bloom:'Animated reveal',Terminal:'Retro green',Halftone:'Print-style dots',Pixel:'Pixel art',Dither:'Retro monochrome',Braille:'Fine dot texture'};
+export const featuredPresets=['Noir','Fine','Hybrid','Bloom','Terminal','Halftone','Pixel','Dither','Braille'] as const;
+export const featuredCaptions:Record<string,string>={Noir:'Black & white',Fine:'Classic ASCII',Hybrid:'Rich color & depth',Bloom:'Animated reveal',Terminal:'Retro green',Halftone:'Print-style dots',Pixel:'Pixel art',Dither:'Retro monochrome',Braille:'Fine dot texture'};
+
+export const demoStyle='Noir';
+export const demoSettings={...presets[demoStyle]};

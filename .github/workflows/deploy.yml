@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Verify supplied demo asset
+        run: echo 'f3d31428c712d3ef73677b9819906bf59cde6afe58b6f56591e3e73417e58a8b  src/assets/demo-cat.gif' | sha256sum -c -
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
