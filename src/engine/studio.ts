@@ -33,12 +33,12 @@ export function validRamp(value:unknown):value is string{
   return typeof value==='string'&&Array.from(value).length>=1&&Array.from(value).length<=64&&value.trim().length>0&&!/[\p{C}\p{Zl}\p{Zp}]/u.test(value);
 }
 const ranges={cell:[2,32],contrast:[.5,2],saturation:[0,2],threshold:[0,100],tolerance:[0,100],speed:[.25,2]} as const;
-const optionalRanges={motionIntensity:[0,100],motionDuration:[1,5]} as const;
+const optionalRanges={motionIntensity:[0,100],motionDuration:[1,5],brightness:[50,250],gamma:[.5,2.5],shadows:[0,60],highlights:[-50,50],colorBoost:[50,200],glyphWeight:[400,700]} as const;
 const allowedEnums={background:['dark','light','color'],effect:['none','reveal','wave','glimmer',...Object.keys(creativeMotionLabels)],mode:['glyph','dots','pixel','dither','braille','contours','stipple','led','hatch','particles'],palette:['source','white','amber','paper','rose','ocean','sunset','ice','custom'],motionDirection:['up','down','left','right','outward','inward']} as const;
 const inRange=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
 const hex=(v:unknown)=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v);
 const own=(o:object,k:string)=>Object.prototype.hasOwnProperty.call(o,k);
-const permitted=new Set([...Object.keys(ranges),...Object.keys(optionalRanges),...Object.keys(allowedEnums),'keyColor','gradientLow','gradientHigh','monochrome','motionLoop','ramp','effects']);
+const permitted=new Set([...Object.keys(ranges),...Object.keys(optionalRanges),...Object.keys(allowedEnums),'keyColor','gradientLow','gradientHigh','monochrome','motionLoop','invert','ramp','effects']);
 export function validLook(value:unknown):value is Look{
   if(!value||typeof value!=='object')return false;
   const look=value as Record<string,unknown>;
@@ -50,6 +50,7 @@ export function validLook(value:unknown):value is Look{
   for(const [k,values] of Object.entries(allowedEnums))if((k==='background'||k==='effect'||s[k]!==undefined)&&!(values as readonly unknown[]).includes(s[k]))return false;
   if(!hex(s.keyColor)||!validRamp(s.ramp)||typeof s.monochrome!=='boolean')return false;
   for(const key of ['gradientLow','gradientHigh'])if(s[key]!==undefined&&!hex(s[key]))return false;
+  if(s.invert!==undefined&&typeof s.invert!=='boolean')return false;
   if(s.motionLoop!==undefined&&typeof s.motionLoop!=='boolean')return false;
   if(s.effects!==undefined){
     if(!s.effects||typeof s.effects!=='object'||Array.isArray(s.effects))return false;

@@ -6,6 +6,7 @@ import {sameSettings,validRamp,surpriseLook,type Look} from '../engine/studio.ts
 import {StyleLibrary} from './StyleLibrary.tsx';
 import {EffectsPanel} from './EffectsPanel.tsx';
 import {MotionPanel} from './MotionPanel.tsx';
+import {TonalPanel} from './TonalPanel.tsx';
 import {SavedLooks} from './SavedLooks.tsx';
 export const ramps = {Classic:presets.Bloom.ramp,Numbers:'0123456789',Binary:'01',Blocks:'░▒▓█'};
 const tabs=['Style','Adjust','Color','Motion','Effects'] as const;
@@ -13,9 +14,9 @@ type Tab=typeof tabs[number];
 const controls=[{key:'cell',label:'Detail',min:2,max:32,step:1,unit:' px'},{key:'contrast',label:'Contrast',min:.5,max:2,step:.05,unit:'×'},{key:'saturation',label:'Color intensity',min:0,max:2,step:.05,unit:'×'},{key:'threshold',label:'Dark threshold',min:0,max:100,step:1,unit:''}] as const;
 interface Props{
   settings:Settings;onChange:(s:Settings,style?:string)=>void;disabled:boolean;style:string;reduced:boolean;onReduced:(r:boolean)=>void;
-  canUndo:boolean;canRedo:boolean;onUndo:()=>void;onRedo:()=>void;onGestureStart:()=>void;
+  onAuto:()=>void;canUndo:boolean;canRedo:boolean;onUndo:()=>void;onRedo:()=>void;onGestureStart:()=>void;
 }
-export function SettingsPanel({settings,onChange,disabled,style,reduced,onReduced,canUndo,canRedo,onUndo,onRedo,onGestureStart}:Props){
+export function SettingsPanel({settings,onChange,disabled,style,reduced,onReduced,canUndo,canRedo,onUndo,onRedo,onGestureStart,onAuto}:Props){
   const [tab,setTab]=useState<Tab>('Style'),[draft,setDraft]=useState(settings.ramp);
   const buttons=useRef<(HTMLButtonElement|null)[]>([]);
   useEffect(()=>setDraft(settings.ramp),[settings.ramp]);
@@ -45,7 +46,7 @@ export function SettingsPanel({settings,onChange,disabled,style,reduced,onReduce
       <SavedLooks look={look} onApply={choose}/>
     </div>
     <div role="tabpanel" id="studio-panel-Adjust" aria-labelledby="studio-tab-Adjust" hidden={tab!=='Adjust'}>
-      {range(controls[0])}<p className="hint" id="detail-help">Smaller marks = more detail.</p>{range(controls[1])}{range(controls[2])}
+      {range(controls[0])}<p className="hint" id="detail-help">Smaller marks = more detail.</p>{range(controls[1])}{range(controls[2])}<TonalPanel settings={settings} onChange={onChange} onAuto={onAuto}/>
       {(!settings.mode||settings.mode==='glyph')&&<>
         <label className="select">Characters<select aria-label="Characters" value={chosen} onChange={e=>{const key=e.target.value;const ramp=key==='custom'?' .:+#@':ramps[key as keyof typeof ramps]??presets[style].ramp;onChange({...settings,ramp});}}>{!Object.values(ramps).includes(presets[style].ramp)&&<option value="preset">{style} original</option>}{Object.entries(ramps).map(([name,chars])=><option key={name} value={name}>{name} · {chars}</option>)}<option value="custom">Custom</option></select></label>
         <label className="select">Custom characters<input aria-label="Custom characters" aria-describedby="ramp-help" maxLength={128} value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();applyRamp();}}}/></label>

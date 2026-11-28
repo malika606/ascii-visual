@@ -112,3 +112,18 @@ test('resolved export side is always an advertised choice, including unusual nat
   assert.equal(resolveOutputSide(options,200),320);assert.equal(resolveOutputSide([{side:64}],960),64);
   const tall=videoResolutionChoices(2,1920,true);assert.equal(resolveOutputSide(tall,960),1440);
 });
+
+import {toneValue,boostColor,autoExposure} from '../src/engine/tonal.ts';
+test('tone defaults preserve luminance, gamma and shadow lift brighten midtones, black stays black',()=>{
+ for(const v of [0,32,128,255])assert.equal(toneValue(v,defaultSettings),v);
+ assert.ok(toneValue(64,{...defaultSettings,gamma:1.5,shadows:20})>64);
+ assert.equal(toneValue(0,{...defaultSettings,brightness:250,gamma:2,shadows:60}),0);
+ assert.equal(boostColor(200,{...defaultSettings,colorBoost:200}),255);
+ assert.ok(autoExposure([20,30,40]).brightness>100);
+});
+test('color boost is independent of mark density, masking precedes correction and saved looks validate',()=>{
+ const data=Uint8ClampedArray.from([80,60,40,255,0,0,0,255,255,255,255,0]);
+ const a=pixelsToCells(data,3,1,defaultSettings),b=pixelsToCells(data,3,1,{...defaultSettings,colorBoost:180});
+ assert.equal(a.length,1);assert.equal(b.length,1);assert.equal(a[0].glyph,b[0].glyph);assert.equal(a[0].light,b[0].light);assert.ok(b[0].red>a[0].red);
+ assert.ok(validLook({style:'Bloom',settings:{...defaultSettings,brightness:140,gamma:1.5,glyphWeight:700,invert:true}}));
+});
