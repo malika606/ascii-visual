@@ -60,6 +60,6 @@ export class Renderer {
     markCtx.globalAlpha=1;
     this.compositor.finish(ctx,markCtx,composition,options.opaque===true||options.videoResolution===true);
     // Existing opaque post-processing passes are bypassed for alpha artwork.
-    if(composition.backdrop!=='transparent')this.effects.apply(canvas,ctx,s.effects);
+    if(composition.backdrop!=='transparent')this.effects.apply(canvas,ctx,s.effects,s);
   }
 }

@@ -1,4 +1,5 @@
-import type {VisualEffects} from './settings.ts';
+import {postActive,postPixels} from './post.ts';
+import type {VisualEffects,Settings} from './settings.ts';
 import {noEffects} from './settings.ts';
 import {seed} from './motion.ts';
 export const effectNames=['glow','rgbSplit','scanlines','grain','distortion','vignette'] as const;
@@ -37,8 +38,8 @@ export class EffectsRenderer{
     }
     c.putImageData(data,0,0);return b;
   }
-  apply(canvas:HTMLCanvasElement,ctx:CanvasRenderingContext2D,input?:Partial<VisualEffects>){
-    const f=normalizedEffects(input);if(!effectNames.some(k=>f[k]>0)){
+  apply(canvas:HTMLCanvasElement,ctx:CanvasRenderingContext2D,input?:Partial<VisualEffects>,settings:Partial<Settings>={}){
+    const f=normalizedEffects(input);if(!effectNames.some(k=>f[k]>0)&&!postActive(settings)){
       // Release large scratch buffers when an effect stack is cleared.
       this.frame=this.channel=this.blur=undefined;return;
     }
@@ -56,12 +57,13 @@ export class EffectsRenderer{
       }
       if(f.rgbSplit>0){
         const b=this.copy(canvas),ch=this.channel??=document.createElement('canvas');resize(ch,w,h);
-        const c=context(ch),shift=Math.max(1,Math.round(f.rgbSplit*.075*scale));
+        const c=context(ch),shift=Math.max(1,Math.round(f.rgbSplit*.075*scale)),angle=(settings.rgbAngle??0)*Math.PI/180;
+        const dx=Math.round(Math.cos(angle)*shift),dy=Math.round(Math.sin(angle)*shift);
         // Recompose independently translated RGB channels. Preserve green at the original position.
         ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);ctx.globalCompositeOperation='lighter';
         for(const [color,offset] of [['#ff0000',-shift],['#00ff00',0],['#0000ff',shift]] as const){
           c.globalCompositeOperation='copy';c.drawImage(b,0,0);c.globalCompositeOperation='multiply';c.fillStyle=color;c.fillRect(0,0,w,h);
-          ctx.drawImage(ch,offset,0);
+          ctx.drawImage(ch,offset===0?0:offset<0?-dx:dx,offset===0?0:offset<0?-dy:dy);
         }
         ctx.globalCompositeOperation='source-over';
         // Keep original signal at low slider values for a continuous, subtle effect.
@@ -70,9 +72,11 @@ export class EffectsRenderer{
       if(f.glow>0){
         // Downsampled halo, then screen over the untouched sharp marks; works without Canvas filter.
         const b=this.blur??=document.createElement('canvas');
-        const divisor=3+f.glow*.075;
+        const divisor=(3+f.glow*.075)*(.35+(settings.glowRadius??50)*.013);
         resize(b,Math.max(1,Math.round(w/(divisor*scale))),Math.max(1,Math.round(h/(divisor*scale))));
         const c=context(b);c.globalCompositeOperation='copy';c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.drawImage(canvas,0,0,b.width,b.height);
+        const threshold=(settings.glowThreshold??0)*2.55;
+        if(threshold>0){const pixels=c.getImageData(0,0,b.width,b.height),d=pixels.data;for(let i=0;i<d.length;i+=4){const peak=Math.max(d[i],d[i+1],d[i+2]),k=Math.max(0,(peak-threshold)/Math.max(1,255-threshold));d[i]*=k;d[i+1]*=k;d[i+2]*=k;}c.putImageData(pixels,0,0);}
         ctx.globalCompositeOperation='screen';ctx.globalAlpha=f.glow*.009;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(b,0,0,w,h);
         ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
       }
@@ -81,15 +85,16 @@ export class EffectsRenderer{
         if(pattern){ctx.save();ctx.scale(scale,scale);ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=f.grain*.006;ctx.fillStyle=pattern;ctx.fillRect(0,0,w/scale,h/scale);ctx.restore();}
       }
       if(f.scanlines>0){
-        const period=Math.max(2,Math.round(4*scale)),line=Math.max(1,Math.round(period*.35));
+        const period=Math.max(2,Math.round((settings.scanSpacing??4)*scale)),line=Math.max(1,Math.round(period*.35));
         ctx.globalAlpha=f.scanlines*.007;ctx.fillStyle='#000';
         for(let y=0;y<h;y+=period)ctx.fillRect(0,y,w,line);
         ctx.globalAlpha=1;
       }
       if(f.vignette>0){
         ctx.save();ctx.translate(w/2,h/2);ctx.scale(w/2,h/2);
-        const g=ctx.createRadialGradient(0,0,.3,0,0,1.38);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,`rgba(0,0,0,${f.vignette*.0095})`);ctx.fillStyle=g;ctx.fillRect(-1,-1,2,2);ctx.restore();
+        const g=ctx.createRadialGradient(0,0,(settings.vignetteRadius??30)/100,0,0,1.38);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,`rgba(0,0,0,${f.vignette*.0095})`);ctx.fillStyle=g;ctx.fillRect(-1,-1,2,2);ctx.restore();
       }
+      if(postActive(settings)){const image=ctx.getImageData(0,0,w,h);postPixels(image.data,w,h,settings);ctx.putImageData(image,0,0);}
     }finally{ctx.restore();}
   }
 }

@@ -215,3 +215,20 @@ test('geometric marks scale monotonically and use bounded shading',()=>{
  assert.equal(shadeColor('#804020',0),'rgb(128,64,32)');assert.equal(shadeColor('#804020',-1),'rgb(0,0,0)');assert.equal(shadeColor('rgb(128,64,32)',1),'rgb(255,255,255)');
  assert.equal(geometricModes.length,6);assert.ok(validLook({style:'Voxel',settings:{...presets.Voxel,shapeRelief:80}}));assert.ok(!validLook({style:'Lines',settings:{...presets.Lines,shapeAngle:181}}));
 });
+
+import {levelCurve,lightGain,postPixels,postActive} from '../src/engine/post.ts';
+test('output levels are monotonic, neutral by default and clamp black/white points',()=>{
+ const neutral=levelCurve();assert.deepEqual([...neutral],Array.from({length:256},(_,i)=>i));
+ const lut=levelCurve(20,220,1.4);assert.equal(lut[20],0);assert.equal(lut[220],255);
+ for(let i=1;i<256;i++)assert.ok(lut[i]>=lut[i-1]);
+ assert.ok(levelCurve(0,255,1.5)[64]>64);assert.equal(postActive(defaultSettings),false);
+});
+test('spotlight preserves black, alpha and falls off spatially; sharpen increases local edge contrast',()=>{
+ assert.equal(lightGain(0,0,.5,.5,.1,1),1);assert.ok(lightGain(.5,.5,.5,.5,.5,1)>1);
+ const d=Uint8ClampedArray.from([0,0,0,0,80,80,80,100,80,80,80,255]);
+ postPixels(d,3,1,{lightAmount:100,lightX:50,lightY:50,lightRadius:30});
+ assert.deepEqual([...d.slice(0,4)],[0,0,0,0]);assert.ok(d[4]>80);assert.equal(d[7],100);assert.equal(d[8],80);
+ const edge=Uint8ClampedArray.from([40,40,40,255,100,100,100,255,40,40,40,255]);
+ postPixels(edge,3,1,{sharpen:100});assert.ok(edge[4]>100&&edge[0]<40);
+ assert.ok(validLook({style:'Fine',settings:{...presets.Fine,postGamma:1.5,lightAmount:70,glowRadius:20}}));
+});

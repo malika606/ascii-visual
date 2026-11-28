@@ -201,6 +201,23 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     with Image.open(download('png')) as exported:assert exported.size==(720,617) and exported.convert('RGBA').tobytes()==bytes(composite)
     tab('Style');page.get_by_role('button',name='Bloom',exact=True).click()
     print('PASS 6 independent visual effects, palette changes, combined export pixels and reset',flush=True)
+    tab('Effects');page.get_by_role('button',name='Reset finish',exact=True).click()
+    frame=lambda:page.get_by_label('Rendered ASCII artwork',exact=True).evaluate('(c)=>c.toDataURL()')
+    original=frame()
+    page.get_by_role('slider',name='Glow',exact=True).fill('65');glow=frame()
+    page.get_by_role('slider',name='Glow radius',exact=True).fill('90');assert frame()!=glow
+    wider=frame();page.get_by_role('slider',name='Glow threshold',exact=True).fill('90');assert frame()!=wider
+    page.get_by_role('button',name='Reset effects',exact=True).click();assert frame()==original
+    for label,value in [('Spotlight','80'),('Sharpen','80'),('Output gamma','1.7'),('Black point','30'),('White point','170')]:
+        page.get_by_role('slider',name=label,exact=True).fill(value);assert frame()!=original,label
+        page.get_by_role('button',name='Reset finish',exact=True).click();assert frame()==original,label
+    page.get_by_role('slider',name='Spotlight',exact=True).fill('80');lit=frame()
+    page.get_by_role('slider',name='Light X',exact=True).fill('85');assert frame()!=lit
+    page.get_by_role('slider',name='Sharpen',exact=True).fill('40')
+    expected=page.get_by_label('Rendered ASCII artwork',exact=True).evaluate("(c)=>Array.from(c.getContext('2d').getImageData(0,0,c.width,c.height).data)")
+    with Image.open(download('png')) as exported:assert exported.convert('RGBA').tobytes()==bytes(expected)
+    page.get_by_role('button',name='Reset finish',exact=True).click();assert frame()==original
+    print('PASS configurable bloom, spotlight position, sharpen, levels and PNG parity',flush=True)
     # New motion uses a separate still-image timeline, with true Canvas changes.
     page.get_by_role('button',name='Fine',exact=True).click()
     tab('Adjust');page.get_by_text('Advanced settings',exact=True).click();page.get_by_label('Reduce motion',exact=True).uncheck();page.get_by_text('Advanced settings',exact=True).click()
