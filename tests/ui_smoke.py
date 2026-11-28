@@ -243,7 +243,7 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     page.get_by_role('button',name='Reset finish',exact=True).click();assert frame()==original
     print('PASS configurable bloom, spotlight position, sharpen, levels and PNG parity',flush=True)
     # New motion uses a separate still-image timeline, with true Canvas changes.
-    page.get_by_role('button',name='Fine',exact=True).click()
+    tab('Style');page.get_by_role('button',name='Fine',exact=True).click()
     tab('Adjust');page.get_by_text('Advanced settings',exact=True).click();page.get_by_label('Reduce motion',exact=True).uncheck();page.get_by_text('Advanced settings',exact=True).click()
     tab('Motion')
     motion=page.get_by_role('combobox',name='Motion',exact=True)
@@ -351,11 +351,15 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
     for name in ('seek-colors.webm','seek-colors.mp4'):
         source(name);a,b,c=seek(.4),seek(1.4),seek(2.4);assert len({a,b,c})==3;assert seek(.4)==a
     source('motion.gif');page.get_by_role('button',name='Browse all 25 styles').click();page.get_by_role('button',name='LED',exact=True).click();page.get_by_role('button',name='Show essentials').click()
+    page.get_by_text('Crop & rotate',exact=True).click()
+    page.get_by_role('slider',name='Crop left',exact=True).fill('25');page.get_by_role('button',name='Rotate right',exact=True).click()
+    expect(page.get_by_label('Rendered ASCII artwork',exact=True)).to_have_attribute('width','48')
     for ext in ('WEBM','MP4'):
         option=page.get_by_label('Format',exact=True).locator(f'option[value={ext.lower()}]')
         if option.count():
-            output=download(ext.lower());assert output.suffix=='.'+ext.lower();probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-show_format','-of','json',str(output)]));assert len(probe['streams'])==1 and probe['streams'][0]['codec_type']=='video';assert ext.lower() in probe['format']['format_name'];print('PASS UI download',ext,probe['streams'][0]['codec_name'],flush=True)
+            output=download(ext.lower());assert output.suffix=='.'+ext.lower();probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-show_format','-of','json',str(output)]));assert len(probe['streams'])==1 and probe['streams'][0]['codec_type']=='video';assert ext.lower() in probe['format']['format_name'];assert (probe['streams'][0]['width'],probe['streams'][0]['height'])==(48,48);print('PASS cropped UI download',ext,probe['streams'][0]['codec_name'],flush=True)
         else:print('SKIP unsupported UI download',ext,flush=True)
+    page.get_by_role('button',name='Reset framing',exact=True).click();page.get_by_text('Crop & rotate',exact=True).click()
     tab('Adjust');page.get_by_text('Advanced settings',exact=True).click();page.get_by_label('Background mode').select_option('color');page.get_by_label('Background color').fill('#22aacc');page.get_by_role('slider',name='Background tolerance',exact=False).fill('10');page.get_by_label('Background mode').select_option('light')
     # Upload errors are local to the preview; the existing paused frame and settings survive.
     source('motion.gif');seek(.15);tab('Adjust');page.get_by_role('slider',name='Detail').fill('12')

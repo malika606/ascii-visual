@@ -23,13 +23,23 @@ jobs:
       - run: pip install playwright pillow
       - run: python -m playwright install --with-deps chromium
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg
-      - name: Browser smoke against Vite
+      - name: Start Vite
+        id: vite
         run: |
           npm run dev -- --host 127.0.0.1 > /tmp/ascii-vite.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:5173/ >/dev/null && break; sleep 1; done
-          ASCII_TEST_URL=http://127.0.0.1:5173 python tests/ui_smoke.py
-          ASCII_TEST_URL=http://127.0.0.1:5173 ASCII_SCREENSHOTS=artifacts/screenshots python tests/hero_smoke.py
-          ASCII_TEST_URL=http://127.0.0.1:5173 ASCII_SCREENSHOTS=artifacts/screenshots python tests/studio_screens.py
+          curl -fsS http://127.0.0.1:5173/ >/dev/null
+      - name: Browser smoke against Vite
+        run: ASCII_TEST_URL=http://127.0.0.1:5173 python tests/ui_smoke.py
+      - name: Hero lifecycle
+        if: always() && steps.vite.outcome == 'success'
+        run: ASCII_TEST_URL=http://127.0.0.1:5173 ASCII_SCREENSHOTS=artifacts/screenshots python tests/hero_smoke.py
+      - name: Studio screenshots
+        if: always() && steps.vite.outcome == 'success'
+        run: ASCII_TEST_URL=http://127.0.0.1:5173 ASCII_SCREENSHOTS=artifacts/screenshots python tests/studio_screens.py
+      - name: Rendering quality audit
+        if: always() && steps.vite.outcome == 'success'
+        run: ASCII_TEST_URL=http://127.0.0.1:5173 ASCII_SCREENSHOTS=artifacts/screenshots python tests/quality_audit.py
       - name: Upload actual browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
