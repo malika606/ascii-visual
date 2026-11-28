@@ -143,6 +143,26 @@ with sync_playwright() as p,tempfile.TemporaryDirectory() as tmp:
         button=gallery.get_by_role('button',name=name,exact=True);button.click();expect(button).to_have_attribute('aria-pressed','true')
         page.wait_for_timeout(80);hashes.append(page.locator('canvas').evaluate('(c)=>c.toDataURL()'))
     assert len(set(hashes))==18,'Each style must produce different actual artwork'
+    gallery.get_by_role('button',name='Dither',exact=True).click();tab('Adjust')
+    algorithm=page.get_by_role('combobox',name='Dither algorithm',exact=True);patterns=[]
+    art=page.get_by_label('Rendered ASCII artwork',exact=True)
+    for method in ('bayer4','bayer8','floyd-steinberg','atkinson','noise','threshold'):
+        algorithm.select_option(method);patterns.append(art.evaluate('(c)=>c.toDataURL()'))
+    assert len(set(patterns))==6
+    page.get_by_role('slider',name='Dither threshold',exact=True).fill('20')
+    assert art.evaluate('(c)=>c.toDataURL()')!=patterns[-1]
+    tab('Style');gallery.get_by_role('button',name='Braille',exact=True).click();tab('Adjust')
+    spatial=art.evaluate('(c)=>c.toDataURL()')
+    page.get_by_role('combobox',name='Braille sampling',exact=True).select_option('density')
+    assert art.evaluate('(c)=>c.toDataURL()')!=spatial
+    page.get_by_role('combobox',name='Braille sampling',exact=True).select_option('spatial')
+    assert art.evaluate('(c)=>c.toDataURL()')==spatial
+    page.get_by_role('slider',name='Dot threshold',exact=True).fill('25')
+    assert art.evaluate('(c)=>c.toDataURL()')!=spatial
+    expected=art.evaluate("(c)=>Array.from(c.getContext('2d').getImageData(0,0,c.width,c.height).data)")
+    with Image.open(download('png')) as exported:assert exported.convert('RGBA').tobytes()==bytes(expected)
+    tab('Style')
+    print('PASS six distinct dither algorithms, thresholds, spatial Braille and PNG parity',flush=True)
     gallery.get_by_role('button',name='Halftone',exact=True).click()
     before=page.locator('canvas').evaluate("(c)=>Array.from(c.getContext('2d').getImageData(0,0,c.width,c.height).data)")
     with Image.open(download('png')) as exported:assert exported.size==(720,617) and exported.convert('RGBA').tobytes()==bytes(before)

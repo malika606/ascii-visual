@@ -176,3 +176,28 @@ test('density and edge emphasis preserve endpoints, alter midtones and do not cr
  assert.ok(validLook({style:'Fine',settings:{...presets.Fine,glyphMapping:'ordered',density:150,markSize:120,edgeEmphasis:80}}));
  assert.ok(!validLook({style:'Fine',settings:{...presets.Fine,markSize:200}}));
 });
+
+import {ditherMap,ditherLabels} from '../src/engine/dither.ts';
+import {braillePattern,spatialBrailleCells,brailleWeights} from '../src/engine/braille.ts';
+test('dither algorithms deterministic, preserve masks and use different spatial patterns',()=>{
+ const w=32,h=32,tones=new Float32Array(w*h).fill(128);tones[0]=-1;
+ const patterns=new Set();
+ for(const algorithm of Object.keys(ditherLabels)){
+   const a=ditherMap(tones,w,h,algorithm),b=ditherMap(tones,w,h,algorithm);
+   assert.deepEqual(a,b);assert.equal(a[0],0);patterns.add(Buffer.from(a).toString('base64'));
+   assert.ok(ditherMap(tones,w,h,algorithm,10).reduce((a,b)=>a+b,0)>=ditherMap(tones,w,h,algorithm,90).reduce((a,b)=>a+b,0));
+ }
+ assert.equal(patterns.size,6);
+ const half=ditherMap(new Float32Array(64).fill(128),8,8,'bayer8');assert.equal(half.reduce((a,b)=>a+b,0),32);
+});
+test('spatial Braille maps all eight independent positions to correct Unicode dots',()=>{
+ for(let k=0;k<8;k++){
+   const tones=new Float32Array(8).fill(0);tones[k]=255;assert.equal(braillePattern(tones),brailleWeights[k]);
+   const data=new Uint8ClampedArray(32);data.set([255,255,255,255],k*4);
+   const cells=spatialBrailleCells(data,1,1,{...presets.Braille,contrast:1,threshold:0});
+   assert.equal(cells.length,1);assert.equal(cells[0].brailleBits,brailleWeights[k]);
+ }
+ assert.equal(braillePattern(new Float32Array(8).fill(-1),10),0);
+ assert.equal(braillePattern(new Float32Array(8).fill(255),90),255);
+ assert.ok(validLook({style:'Braille',settings:{...presets.Braille,brailleSampling:'spatial',brailleThreshold:40}}));
+});
